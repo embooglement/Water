@@ -6,7 +6,27 @@
 using namespace std;
 
 bool issymbol(char c) {
-	return ispunct(c); // TODO: maybe alter what symbols these produce
+	switch (c) {
+		case '(':
+		case ')':
+		case '<':
+		case '>':
+		case '[':
+		case ']':
+		case '{':
+		case '}':
+		case '=':
+		case '!':
+		case '+':
+		case '-':
+		case '*':
+		case '/':
+		case '%':
+		case '^':
+			return true;
+		default:
+			return false;
+	}
 }
 
 string to_string(char c) {
@@ -15,17 +35,17 @@ string to_string(char c) {
 
 vector<Token> Lexer::tokenize(istream& input) {
 	vector<Token> tokens;
-	
+
 	const auto& eof = istream::traits_type::eof();
-	
+
 	auto push_token = [&tokens](TokenType type, string text) {
 		tokens.emplace_back(type, text);
 	};
-	
+
 	input >> noskipws;
-	
+
 	char current_char = ' ';
-	while (input >> current_char) {		
+	while (input >> current_char) {
 		if (isspace(current_char)) {
 			while (isspace(input.peek())) {
 				input >> current_char;
@@ -33,12 +53,12 @@ vector<Token> Lexer::tokenize(istream& input) {
 		} else if (isalpha(current_char)) {
 			string identifier = to_string(current_char);
 			while (isalpha(input.peek())) {
-				input >> current_char; 
+				input >> current_char;
 				identifier += current_char;
 			}
-			
+
 			TokenType type = TokenType::Identifier;
-			
+
 			if (keywords.count(identifier) > 0) {
 				type = TokenType::Keyword;
 			}
@@ -46,71 +66,73 @@ vector<Token> Lexer::tokenize(istream& input) {
 			push_token(type, identifier);
 		} else if (isdigit(current_char)) {
 			string number_literal = to_string(current_char);
-			
+
 			while (isdigit(input.peek())) {
 				input >> current_char;
 				number_literal += current_char;
 			}
-			
+
 			push_token(TokenType::NumberLiteral, number_literal);
 		} else if (current_char == '\"') {
 			string string_literal = to_string(current_char);
 			bool closed = false;
-			
+
 			while (input >> current_char) {
 				string_literal += current_char;
-				
+
 				if (current_char == '\"') {
 					closed = true;
 					push_token(TokenType::StringLiteral, string_literal);
 					break;
 				}
 			}
-			
+
 			if (!closed) {
-				push_token(TokenType::InvalidToken, string_literal);	
+				push_token(TokenType::InvalidToken, string_literal);
 			}
 		} else if (current_char == '#') {
-			string comment = "";
-			
+			string comment = "#";
+
 			bool is_block_comment = false;
 			if (input.peek() == '-') {
 				is_block_comment = true;
 			}
-			
+
+			bool b = false;
+
 			while (input >> current_char) {
 				if (is_block_comment) {
 					if (current_char == '#' && comment.back() == '-') {
+						comment += current_char;
 						push_token(TokenType::Comment, comment);
-						break;
-					}
-					
-					// TODO: note that this means that block comments at the end of files don't need to be closed
-					if (current_char == eof) {
-						push_token(TokenType::Comment, comment);
+						b = true;
 						break;
 					}
 
-					if (current_char != '-' || input.peek() != '#') {
-						comment += current_char;
+					comment += current_char;
+
+					if (current_char == eof) {
+						push_token(TokenType::Comment, comment);
+						b = true;
+						break;
 					}
 				} else {
 					if (current_char == '\n' || current_char == eof) {
 						push_token(TokenType::Comment, comment);
 						break;
 					}
-		
+
 					comment += current_char;
 				}
 			}
 		} else if (issymbol(current_char)) {
 			string op = to_string(current_char);
-			auto matches_operator = [] (const string& op_str) {	
+			auto matches_operator = [] (const string& op_str) {
 				return operators.count(op_str) > 0;
 			};
-			
+
 			bool operator_was_matched = matches_operator(op);
-			
+
 			while (true) {
 				char peeked = input.peek();
 
@@ -119,13 +141,13 @@ vector<Token> Lexer::tokenize(istream& input) {
 						push_token(TokenType::Operator, op);
 						break;
 					}
-					
+
 					input >> current_char;
 					op += current_char;
 					operator_was_matched = matches_operator(op);
-				} else {					
+				} else {
 					if (operator_was_matched) {
-						push_token(TokenType::Operator, op);	
+						push_token(TokenType::Operator, op);
 					} else {
 						push_token(TokenType::InvalidToken, op);
 					}
@@ -139,10 +161,10 @@ vector<Token> Lexer::tokenize(istream& input) {
 				input >> current_char;
 				invalid_text += current_char;
 			}
-			
+
 			push_token(TokenType::InvalidToken, invalid_text);
 		}
 	}
-	
+
 	return tokens;
 }

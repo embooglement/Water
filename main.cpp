@@ -21,7 +21,7 @@ int main(int argc, const char** argv) {
 	vector<Token> tokens = lexer.tokenize(file);
 
 	for (auto token : tokens) {
-		cout << token.type() << ": " 
+		cout << token.type() << ": "
 			 << "\"" << token.text() << "\""
 			 << endl;
 	}
@@ -29,7 +29,7 @@ int main(int argc, const char** argv) {
 //	Parser parser;
 //	shared_ptr<ASTNode> tree = parser.parse(tokens);
 
-	// TODO: print out abstract syntax tree 
+	// TODO: print out abstract syntax tree
 
 	return 0;
 }

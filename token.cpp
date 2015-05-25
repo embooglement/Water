@@ -12,20 +12,20 @@ ostream& operator<<(ostream& out, TokenType type) {
 		TOKEN_CASE(Operator);
 		TOKEN_CASE(Comment);
 		TOKEN_CASE(Keyword);
-		default: out << "UnknownToken"; 
+		default: out << "UnknownToken";
 	}
 	#undef TOKEN_CASE
-	
+
 	return out;
 }
 
 Token::Token(TokenType type, std::string text)
 	: _type(type), _text(text) {}
-	
-TokenType Token::type() const { 
+
+TokenType Token::type() const {
 	return _type;
 }
-	
+
 const std::string& Token::text() const {
 	return _text;
 }
