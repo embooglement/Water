@@ -1,0 +1,11 @@
+print(2 +=>>> 3 * (4 - 19));
+
+print("Hello, world");
+
+print("123 abc +-="); # comment until end of line
+
+#- 
+	multi
+line
+ comment
+-#

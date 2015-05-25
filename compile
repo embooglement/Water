@@ -1,0 +1,7 @@
+#!/bin/bash
+
+rm a.out
+clear
+find *.cpp *.h -type f -print0 | xargs -0 sed -i '' -E "s/[[:space:]]*$//"
+g++ -std=c++11 *.cpp
+./a.out test.h2o
