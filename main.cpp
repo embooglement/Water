@@ -18,11 +18,18 @@ int main(int argc, const char** argv) {
 	ifstream file {filename};
 
 	Lexer lexer;
-	vector<Token> tokens = lexer.tokenize(file);
+	vector<Token> tokens;
+
+	try {
+		tokens = lexer.tokenize(file, filename);
+	} catch (InvalidTokenError error) {
+		cout << error.what() << endl;
+	}
 
 	for (auto token : tokens) {
-		cout << token.type() << ": "
-			 << "\"" << token.text() << "\""
+		cout << token.type()
+			 << ":\t\"" << token.text() << "\""
+			 << "\t\t" << token.meta()
 			 << endl;
 	}
 

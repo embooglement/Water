@@ -1,4 +1,4 @@
-#include "Token.h"
+#include "token.h"
 
 using namespace std;
 
@@ -19,11 +19,19 @@ ostream& operator<<(ostream& out, TokenType type) {
 	return out;
 }
 
-Token::Token(TokenType type, std::string text)
-	: _type(type), _text(text) {}
+ostream& operator<<(ostream& out, const TokenMetaData& meta) {
+	return out << meta.filename << ":" << meta.line << ":" << meta.column;
+}
+
+Token::Token(TokenType type, TokenMetaData meta, string text)
+	: _type(type), _meta(meta), _text(text) {}
 
 TokenType Token::type() const {
 	return _type;
+}
+
+const TokenMetaData& Token::meta() const {
+	return _meta;
 }
 
 const std::string& Token::text() const {

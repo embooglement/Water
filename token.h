@@ -17,12 +17,22 @@ enum class TokenType {
 
 std::ostream& operator<<(std::ostream& out, TokenType type);
 
+struct TokenMetaData {
+	std::string filename;
+	int line;
+	int column;
+};
+
+std::ostream& operator<<(std::ostream& out, const TokenMetaData& meta);
+
 class Token {
 public:
-	Token(TokenType token_type, std::string text);
+	Token(TokenType token_type, TokenMetaData meta, std::string text);
 	TokenType type() const;
 	const std::string& text() const;
+	const TokenMetaData& meta() const;
 private:
+	const TokenMetaData _meta;
 	const TokenType _type;
 	const std::string _text;
 };
