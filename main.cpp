@@ -31,22 +31,27 @@ int main(int argc, const char** argv) {
 		return -1;
 	}
 
+
+	auto exit_with_errors = [](int error_count) {
+		cout << "Exiting with " << error_count << (error_count == 1 ? " error" : " errors") << endl;
+	};
+
 	Lexer lexer;
 	vector<Token> tokens;
+	int error_count;
 
-	try {
-		// TODO: return error count
-		tokens = lexer.tokenize(file, filename);
-	} catch (InvalidTokenError error) {
-		cerr << "ERROR " << error.what() << endl;
+	tie(tokens, error_count) = lexer.tokenize(file, filename);
+
+	if (error_count > 0) {
+		exit_with_errors(error_count);
+		return -1;
 	}
-
+	
 	print_tokens(tokens);
-	cout << endl;
 
 	Parser parser;
 	shared_ptr<ASTNode> tree;
-	int error_count;
+
 	tie(tree, error_count) = parser.parse(begin(tokens), end(tokens));
 
 	if (tree) {
@@ -54,14 +59,11 @@ int main(int argc, const char** argv) {
 		tree->output(cout, 0);
 		cout << endl;
 	} else {
-		cerr << "No parse tree produced" << endl;
+		cout << "No parse tree produced" << endl;
 	}
 
 	if (error_count > 0) {
-		cerr << error_count
-		     << (error_count == 1 ? " error" : " errors")
-			 << " generated"
-			 << endl;
+		exit_with_errors(error_count);
 		return -1;
 	}
 

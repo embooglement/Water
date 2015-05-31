@@ -231,10 +231,5 @@ pair<shared_ptr<ASTNode>, int> Parser::parse(TokenIter begin, TokenIter end) {
 
 void Parser::error(const TokenMetaData& meta, const string& error) {
 	++_error_count;
-
-	cerr << "ERROR "
-		 << meta.filename << ":"
-		 << meta.line << ":"
-		 << meta.column << ": "
-		 << error << endl;
+	printError(meta, error);
 }

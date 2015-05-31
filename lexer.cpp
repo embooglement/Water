@@ -5,19 +5,21 @@
 
 #include "lexer.h"
 #include "constants.h"
+#include "errors.h"
 
 using namespace std;
 
-bool issymbol(char c) {
+static bool issymbol(char c) {
 	return symbol_chars.count(c) > 0;
 }
 
-string to_string(char c) {
+static string to_string(char c) {
 	return string(1, c);
 }
 
-vector<Token> Lexer::tokenize(istream& input, const string& filename) {
+pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename) {
 	vector<Token> tokens;
+	int error_count = 0;
 
 	const auto& eof = istream::traits_type::eof();
 
@@ -30,16 +32,17 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 		tokens.emplace_back(type, meta, text);
 	};
 
-	auto invalid_token = [&](string text, string error) {
+	auto invalid_token = [&](string error) {
+		++error_count;
 		TokenMetaData meta = { filename, line, starting_column };
-		throw InvalidTokenError(meta, text, error);
+		this->error(meta, error);
 	};
 
 	auto peek = [&] {
 		return input.peek();
 	};
 
-	auto next_char = [&](char& c) -> bool {
+	auto get_next_char = [&](char& c) -> bool {
 		input >> c;
 
 		if (c == '\n') {
@@ -55,17 +58,17 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 	input >> noskipws;
 
 	char current_char;
-	while (next_char(current_char)) {
+	while (get_next_char(current_char)) {
 		starting_column = current_column - 1;
 
 		if (isspace(current_char)) {
 			while (isspace(peek())) {
-				next_char(current_char);
+				get_next_char(current_char);
 			}
 		} else if (isalpha(current_char)) {
 			string identifier = to_string(current_char);
 			while (isalpha(peek())) {
-				next_char(current_char);
+				get_next_char(current_char);
 				identifier += current_char;
 			}
 
@@ -80,7 +83,7 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 			string number_literal = to_string(current_char);
 
 			while (isdigit(peek())) {
-				next_char(current_char);
+				get_next_char(current_char);
 				number_literal += current_char;
 			}
 
@@ -89,10 +92,12 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 			string string_literal = "";
 			bool closed = false;
 
-			while (next_char(current_char)) {
+			while (get_next_char(current_char)) {
 				if (current_char == '\"') {
 					closed = true;
 					push_token(TokenType::StringLiteral, string_literal);
+					break;
+				} else if (current_char == '\n') {
 					break;
 				}
 
@@ -100,7 +105,7 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 			}
 
 			if (!closed) {
-				invalid_token(string_literal, "Expected closing double quote");
+				invalid_token("expected closing double quote");
 			}
 		} else if (current_char == '#') {
 			string comment = "#";
@@ -112,7 +117,7 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 
 			bool b = false;
 
-			while (next_char(current_char)) {
+			while (get_next_char(current_char)) {
 				if (is_block_comment) {
 					if (current_char == '#' && comment.back() == '-') {
 						comment += current_char;
@@ -150,14 +155,14 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 						break;
 					}
 
-					next_char(current_char);
+					get_next_char(current_char);
 					op += current_char;
 					operator_was_matched = isBuiltin(op);
 				} else {
 					if (operator_was_matched) {
 						push_token(TokenType::Operator, op);
 					} else {
-						invalid_token(op, "Unknown operator");
+						invalid_token("unknown operator: " + op);
 					}
 					break;
 				}
@@ -166,30 +171,17 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 			string invalid_text = to_string(current_char);
 
 			while (!isspace(peek())) {
-				next_char(current_char);
+				get_next_char(current_char);
 				invalid_text += current_char;
 			}
 
-			invalid_token(invalid_text, "Invalid text"); // TODO: better error message
+			invalid_token("invalid text: " + invalid_text);
 		}
 	}
 
-	return tokens;
+	return { tokens, error_count };
 }
 
-InvalidTokenError::InvalidTokenError(TokenMetaData meta, const string& text, const string& error)
-	: runtime_error(error), _meta(meta), _text(text) {
-	_error = meta.filename + ":" + to_string(meta.line) + ":" + to_string(meta.column) + ": " + error + " (" + text + ")";
-}
-
-const TokenMetaData& InvalidTokenError::meta() const {
-	return _meta;
-}
-
-const string& InvalidTokenError::text() const {
-	return _text;
-}
-
-const char* InvalidTokenError::what() const noexcept {
-	return _error.c_str();
+void Lexer::error(const TokenMetaData& meta, string error) {
+	printError(meta, error);
 }
