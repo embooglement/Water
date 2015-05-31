@@ -1,0 +1,5 @@
+set verbose off
+catch throw
+break Parser::parse
+set args test.h2o
+show args

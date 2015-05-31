@@ -1,5 +1,14 @@
 #!/bin/bash
-rm a.out
+rm -r water* 
 clear
 find *.cpp *.h -type f -print0 | xargs -0 sed -i "" -E "s/[[:space:]]*$//"
-g++ -std=c++11 *.cpp && ./a.out test.h2o
+g++ -g -Wall -std=c++11 *.cpp -o water
+
+if [ $? ]; then
+	if [ "$1" == "debug" ]; then
+		gdb water --command=gdb_config
+	else
+		./water test.h2o
+		cat test.h2o
+	fi
+fi
