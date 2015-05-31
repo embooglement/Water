@@ -32,9 +32,9 @@ public:
 	const std::string& text() const;
 	const TokenMetaData& meta() const;
 private:
-	const TokenMetaData _meta;
-	const TokenType _type;
-	const std::string _text;
+	TokenMetaData _meta;
+	TokenType _type;
+	std::string _text;
 };
 
 #endif

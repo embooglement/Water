@@ -3,29 +3,8 @@
 
 #include <vector>
 #include <string>
-#include <set>
 #include <stdexcept>
 #include "token.h"
-
-const static std::set<std::string> keywords = {
-	"print",
-	"if", "else", "while", "for",
-	"and", "or", "not"
-};
-
-const static std::set<std::string> operators = {
-	"=", ".", ";",
-	"(", ")",
-	"[", "]",
-	"{", "}",
-	"+", "+=", "++",
-	"-", "-=", "--",
-	"*", "*=",
-	"/", "/=",
-	"%", "%=",
-	"^", "^=",
-	"<", ">", "==", "!="
-};
 
 class Lexer {
 public:

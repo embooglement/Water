@@ -1,20 +1,15 @@
 #include <string>
+#include <set>
 #include <cctype>
 #include <ios>
+
 #include "lexer.h"
+#include "constants.h"
 
 using namespace std;
 
 bool issymbol(char c) {
-	static set<char> symbols;
-
-	if (symbols.empty()) {
-		for (const auto& op : operators) {
-			symbols.insert(op.begin(), op.end());
-		}
-	}
-
-	return symbols.count(c) > 0;
+	return symbol_chars.count(c) > 0;
 }
 
 string to_string(char c) {
@@ -37,7 +32,7 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 
 	auto invalid_token = [&](string text, string error) {
 		TokenMetaData meta = { filename, line, starting_column };
-		throw InvalidTokenError(meta, error, text);
+		throw InvalidTokenError(meta, text, error);
 	};
 
 	auto peek = [&] {
@@ -91,17 +86,17 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 
 			push_token(TokenType::NumberLiteral, number_literal);
 		} else if (current_char == '\"') {
-			string string_literal = to_string(current_char);
+			string string_literal = "";
 			bool closed = false;
 
 			while (next_char(current_char)) {
-				string_literal += current_char;
-
 				if (current_char == '\"') {
 					closed = true;
 					push_token(TokenType::StringLiteral, string_literal);
 					break;
 				}
+
+				string_literal += current_char;
 			}
 
 			if (!closed) {
@@ -144,24 +139,20 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 			}
 		} else if (issymbol(current_char)) {
 			string op = to_string(current_char);
-			auto matches_operator = [] (const string& op_str) {
-				return operators.count(op_str) > 0;
-			};
-
-			bool operator_was_matched = matches_operator(op);
+			bool operator_was_matched = isBuiltin(op);
 
 			while (true) {
 				char peeked = peek();
 
 				if (issymbol(peeked)) {
-					if (operator_was_matched && !matches_operator(op + peeked)) {
+					if (operator_was_matched && !isBuiltin(op + peeked)) {
 						push_token(TokenType::Operator, op);
 						break;
 					}
 
 					next_char(current_char);
 					op += current_char;
-					operator_was_matched = matches_operator(op);
+					operator_was_matched = isBuiltin(op);
 				} else {
 					if (operator_was_matched) {
 						push_token(TokenType::Operator, op);
@@ -187,8 +178,8 @@ vector<Token> Lexer::tokenize(istream& input, const string& filename) {
 }
 
 InvalidTokenError::InvalidTokenError(TokenMetaData meta, const string& text, const string& error)
-	: runtime_error(error), _text(text), _meta(meta) {
-	_error = meta.filename + ":" + to_string(meta.line) + ":" + to_string(meta.column) + ": " + error;
+	: runtime_error(error), _meta(meta), _text(text) {
+	_error = meta.filename + ":" + to_string(meta.line) + ":" + to_string(meta.column) + ": " + error + " (" + text + ")";
 }
 
 const TokenMetaData& InvalidTokenError::meta() const {

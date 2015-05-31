@@ -24,7 +24,7 @@ ostream& operator<<(ostream& out, const TokenMetaData& meta) {
 }
 
 Token::Token(TokenType type, TokenMetaData meta, string text)
-	: _type(type), _meta(meta), _text(text) {}
+	: _meta(meta), _type(type), _text(text) {}
 
 TokenType Token::type() const {
 	return _type;
