@@ -46,7 +46,7 @@ int main(int argc, const char** argv) {
 		exit_with_errors(error_count);
 		return -1;
 	}
-	
+
 	print_tokens(tokens);
 
 	Parser parser;
