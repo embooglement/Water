@@ -10,7 +10,7 @@ const set<string> keywords = {
 
 const map<Builtin, string> operators = {
 	{ Builtin::Assignment, "=" },
-	{ Builtin::Dereference, "." },
+	{ Builtin::AccessMember, "." },
 	{ Builtin::StatementDelimiter, ";" },
 	{ Builtin::ArgumentDelimiter, "," },
 
@@ -54,34 +54,79 @@ const map<Builtin, string> operators = {
 	{ Builtin::GreaterThanOrEqual, ">=" },
 
 	{ Builtin::EqualTo, "==" },
-	{ Builtin::NotEqualTo, "!=" }
+	{ Builtin::NotEqualTo, "!=" },
+
+	{ Builtin::LogicalAnd, "and" },
+	{ Builtin::LogicalOr, "or" },
+	{ Builtin::LogicalNot, "not" },
+
+	{ Builtin::Exists, "exists" }
 };
 
-const map<Builtin, OperatorInfo> operator_info = {
-	// { Operator, OperatorInfo { precedence, is_binary, left_assosciative } }
-	{ Builtin::Addition, { 1, true, true } },
-	{ Builtin::Subtraction, { 1, true, true } },
+const int assignment_level = 0;
+const int logical_or_level = assignment_level + 1;
+const int logical_and_level = logical_or_level + 1;
+const int equality_level = logical_and_level + 1;
+const int ordering_level = equality_level + 1;
+const int additive_level = ordering_level + 1;
+const int multiplicative_level = additive_level + 1;
+const int negation_level = multiplicative_level + 1;
+const int exponential_level = negation_level + 1;
+const int logical_not_level = exponential_level + 1;
+const int existential_level = logical_not_level + 1;
+const int incremental_level = existential_level + 1;
+const int member_access_level = incremental_level + 1;
 
-	{ Builtin::Multiplication, { 2, true, true } },
-	{ Builtin::Division, { 2, true, true } },
-	{ Builtin::Modulus, { 2, true, true } },
+const map<Builtin, BuiltinInfo> builtin_info = {
+	// { Builtin, BuiltinInfo { is_operator, is_binary, precedence, binding_direction } }
+	{ Builtin::Assignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
+	{ Builtin::AdditionAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
+	{ Builtin::SubtractionAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
+	{ Builtin::MultiplicationAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
+	{ Builtin::DivisionAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
+	{ Builtin::ModulusAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
 
-	{ Builtin::Negation, { 3, false, false } },
+	{ Builtin::LogicalOr, { true, true, logical_or_level, BindingDirection::LeftAssociative } },
 
-	{ Builtin::Exponent, { 4, true, false } },
+	{ Builtin::LogicalAnd, { true, true, logical_and_level, BindingDirection::LeftAssociative } },
 
-	{ Builtin::LessThan, { 0, true, true } },
-	{ Builtin::LessThanOrEqual, { 0, true, true } },
+	{ Builtin::EqualTo, { true, true, equality_level, BindingDirection::LeftAssociative } },
+	{ Builtin::NotEqualTo, { true, true, equality_level, BindingDirection::LeftAssociative } },
 
-	{ Builtin::GreaterThan, { 0, true, true } },
-	{ Builtin::GreaterThanOrEqual, { 0, true, true } },
+	{ Builtin::LessThan, { true, true, ordering_level, BindingDirection::LeftAssociative } },
+	{ Builtin::LessThanOrEqual, { true, true, ordering_level, BindingDirection::LeftAssociative } },
+	{ Builtin::GreaterThan, { true, true, ordering_level, BindingDirection::LeftAssociative } },
+	{ Builtin::GreaterThanOrEqual, { true, true, ordering_level, BindingDirection::LeftAssociative } },
 
-	{ Builtin::EqualTo, { 0, true, true } },
-	{ Builtin::NotEqualTo, { 0, true, true } }
+	{ Builtin::Addition, { true, true, additive_level, BindingDirection::LeftAssociative } },
+	{ Builtin::Subtraction, { true, true, additive_level, BindingDirection::LeftAssociative } },
+
+	{ Builtin::Multiplication, { true, true, multiplicative_level, BindingDirection::LeftAssociative } },
+	{ Builtin::Division, { true, true, multiplicative_level, BindingDirection::LeftAssociative } },
+	{ Builtin::Modulus, { true, true, multiplicative_level, BindingDirection::LeftAssociative } },
+
+	{ Builtin::Negation, { true, false, negation_level, BindingDirection::Prefix } },
+
+	{ Builtin::Exponent, { true, true, exponential_level, BindingDirection::RightAssociative } },
+
+	{ Builtin::LogicalNot, { true, false, logical_not_level, BindingDirection::Prefix } },
+
+	{ Builtin::Exists, { true, false, existential_level, BindingDirection::Postfix } },
+
+	{ Builtin::Increment, { true, false, incremental_level, BindingDirection::Prefix } },
+	{ Builtin::Decrement, { true, false, incremental_level, BindingDirection::Prefix } },
+
+	{ Builtin::AccessMember, { true, true, member_access_level, BindingDirection::LeftAssociative } },
 };
 
 bool isBuiltin(const string& op) {
-	return getBuiltin(op) != Builtin::Invalid;
+	for (auto&& op_pair : operators) {
+		if (op_pair.second == op) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool isBuiltin(const string& op, Builtin builtin) {
@@ -93,10 +138,24 @@ bool isBuiltin(const string& op, Builtin builtin) {
 	return false;
 }
 
-Builtin getBuiltin(const string& op) {
+Builtin getBinaryBuiltin(const string& op) {
 	for (auto&& op_pair : operators) {
 		if (op_pair.second == op) {
-			return op_pair.first;
+			if (isBinaryOperator(op_pair.first)) {
+				return op_pair.first;
+			}
+		}
+	}
+
+	return Builtin::Invalid;
+}
+
+Builtin getUnaryBuiltin(const string& op) {
+	for (auto&& op_pair : operators) {
+		if (op_pair.second == op) {
+			if (!isBinaryOperator(op_pair.first)) {
+				return op_pair.first;
+			}
 		}
 	}
 
@@ -113,14 +172,18 @@ string getBuiltinString(Builtin builtin) {
 	return "(unknown operator)";
 }
 
-OperatorInfo getOperatorInfo(Builtin builtin) {
-	auto it = operator_info.find(builtin);
+BuiltinInfo getBuiltinInfo(Builtin builtin) {
+	auto it = builtin_info.find(builtin);
 
-	if (it != end(operator_info)) {
+	if (it != end(builtin_info)) {
 		return it->second;
 	}
 
-	return { -1, false, false };
+	return { false, false, -1, BindingDirection::None };
+}
+
+bool isBinaryOperator(Builtin builtin) {
+	return getBuiltinInfo(builtin).is_binary;
 }
 
 const auto symbol_chars = ([]() -> set<char> {

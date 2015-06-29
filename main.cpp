@@ -31,7 +31,6 @@ int main(int argc, const char** argv) {
 		return -1;
 	}
 
-
 	auto exit_with_errors = [](int error_count) {
 		cout << "Exiting with " << error_count << (error_count == 1 ? " error" : " errors") << endl;
 	};
@@ -57,6 +56,10 @@ int main(int argc, const char** argv) {
 	if (tree) {
 		cout << "\nOutput: " << endl;
 		tree->output(cout, 0);
+		cout << endl;
+
+		cout << "\nEvaluate: " << endl;
+		tree->evaluate()->output(cout);
 		cout << endl;
 	} else {
 		cout << "No parse tree produced" << endl;

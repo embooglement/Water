@@ -9,7 +9,7 @@ enum class Builtin {
 	Invalid = -1,
 
 	Assignment,
-	Dereference,
+	AccessMember,
 	StatementDelimiter,
 	ArgumentDelimiter,
 
@@ -53,29 +53,45 @@ enum class Builtin {
 	LessThanOrEqual,
 
 	EqualTo,
-	NotEqualTo
-};
+	NotEqualTo,
 
-//std::ostream& operator<<(std::ostream& out, Builtin builtin);
+	LogicalAnd,
+	LogicalOr,
+	LogicalNot,
+
+	Exists
+};
 
 extern const std::set<std::string> keywords;
 extern const std::map<Builtin, std::string> operators;
 
-struct OperatorInfo {
-	int precedence;
-	bool is_binary;
-	bool left_associative;
+enum class BindingDirection {
+	None,
+	LeftAssociative,
+	RightAssociative,
+	Prefix,
+	Postfix
 };
 
-extern const std::map<Builtin, OperatorInfo> operator_info;
+struct BuiltinInfo {
+	bool is_operator;
+	bool is_binary;
+	int precedence;
+	BindingDirection binding_direction;
+};
+
+extern const std::map<Builtin, BuiltinInfo> builtin_info;
 
 bool isBuiltin(const std::string& op);
 bool isBuiltin(const std::string& op, Builtin builtin);
 
-Builtin getBuiltin(const std::string& op);
+Builtin getBinaryBuiltin(const std::string& op);
+Builtin getUnaryBuiltin(const std::string& op);
 std::string getBuiltinString(Builtin builtin);
 
-OperatorInfo getOperatorInfo(Builtin builtin);
+BuiltinInfo getBuiltinInfo(Builtin builtin);
+
+bool isBinaryOperator(Builtin builtin);
 
 extern const std::set<char> symbol_chars;
 

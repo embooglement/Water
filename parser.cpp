@@ -1,12 +1,14 @@
 #include <iostream>
 #include <iterator>
 #include <utility>
+#include <stdexcept>
 
 #include "parser.h"
 #include "errors.h"
 
 using namespace std;
 
+// TODO: at some point, make a token streaming class, so that I don't need to keep track of end
 bool eat_token(TokenIter& iter, const TokenIter& end) {
 	++iter;
 	return iter == end;
@@ -24,23 +26,34 @@ struct ParserHelper {
 	}
 
 	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenIter& iter, const TokenIter& end) {
+		if (iter == end) {
+			return nullptr;
+		}
+
 		shared_ptr<ASTNode> expr;
 		auto token = *iter;
 		bool input_ended = false;
 		bool allow_function_call = false;
 
 		switch (token.type()) {
-			case TokenType::Keyword:
+			case TokenType::Keyword: {
+				if (token.text() == "print") {
+					allow_function_call = true;
+					input_ended = eat_token(iter, end);
+					expr = make_shared<IdentifierNode>(token.meta(), "print");
+					break;
+				}
+			}
 			case TokenType::Operator: {
 				if (isBuiltin(token.text(), Builtin::OpenParen)) {
 					if (eat_token(iter, end)) {
-						p.error(token.meta(), errors::expected_expression);
+						p.error(token.meta(), errors::expected_expression + " 39");
 						return nullptr;
 					}
 
 					expr = parseExpression(p, iter, end);
 					if (!expr) {
-						p.error(token.meta(), errors::expected_expression);
+						p.error(token.meta(), errors::expected_expression + " 45");
 						return nullptr;
 					}
 
@@ -51,6 +64,8 @@ struct ParserHelper {
 					}
 
 					input_ended = eat_token(iter, end);
+				} else {
+					return parseUnaryOperator(p, iter, end, nullptr);
 				}
 			} break;
 			case TokenType::Identifier: {
@@ -71,7 +86,6 @@ struct ParserHelper {
 		}
 
 		if (!expr) {
-			p.error(token.meta(), errors::expected_expression);
 			return nullptr;
 		}
 
@@ -80,14 +94,12 @@ struct ParserHelper {
 		}
 
 		auto next_token = *iter;
-
 		if (allow_function_call && isBuiltin(next_token.text(), Builtin::OpenFunctionCall)) {
 			if (eat_token(iter, end)) {
 				p.error(next_token.meta(), errors::expected_closing_func_call);
 				return nullptr;
 			}
 
-			auto open_paren_token = next_token;
 			vector<shared_ptr<ASTNode>> arguments;
 
 			while (true) {
@@ -126,19 +138,65 @@ struct ParserHelper {
 		return expr;
 	}
 
-	// <expr> ::= (<expr>) | <identifier> | <number-literal> | <string-literal> | <func-call> | <bin-op-expr> | <unary-op-expr>
-	static shared_ptr<ASTNode> parseExpression(Parser& p, TokenIter& iter, const TokenIter& end) {
-		auto expr = parseExpressionPrimary(p, iter, end);
-		return parseOperator(p, iter, end, expr, 0);
+	static shared_ptr<ASTNode> parseUnaryOperator(Parser& p, TokenIter& iter, const TokenIter& end, shared_ptr<ASTNode> lhs) {
+		if (iter == end) {
+			return lhs;
+		}
+
+		auto token = *iter;
+		auto token_type = token.type();
+		if (token_type != TokenType::Operator && token_type != TokenType::Keyword) {
+			return parseExpressionPrimary(p, iter, end);
+		}
+
+		auto op = getUnaryBuiltin(token.text());
+		if (op == Builtin::Invalid) {
+			return parseExpressionPrimary(p, iter, end);
+		}
+
+		auto op_info = getBuiltinInfo(op);
+		if (!op_info.is_operator) {
+			return parseExpressionPrimary(p, iter, end);
+		}
+
+		bool input_ended = eat_token(iter, end);
+
+		if (!lhs) {
+			if (input_ended) {
+				p.error(token.meta(), "expression required for prefix unary operator");
+				return nullptr;
+			}
+
+			auto expr = parseUnaryOperator(p, iter, end, nullptr);
+			expr = parseBinaryOperator(p, iter, end, expr, op_info.precedence);
+
+			return make_shared<UnaryOperatorNode>(token.meta(), op, expr);
+		} else {
+			// TODO: postfix operators
+			return nullptr;
+		}
 	}
 
-	static shared_ptr<ASTNode> parseOperator(Parser& p, TokenIter& iter, const TokenIter& end, shared_ptr<ASTNode> lhs, int min_precedence) {
+	static shared_ptr<ASTNode> parseBinaryOperator(Parser& p, TokenIter& iter, const TokenIter& end, shared_ptr<ASTNode> lhs, int min_precedence) {
 		while (true) {
-			auto token = *iter;
-			auto op = getBuiltin(token.text());
-			auto op_info = getOperatorInfo(op);
+			if (iter == end) {
+				return lhs;
+			}
 
-			if (!op_info.is_binary) {
+			auto token = *iter;
+			auto token_type = token.type();
+
+			if (token_type != TokenType::Operator && token_type != TokenType::Keyword) {
+				return lhs;
+			}
+
+			auto op = getBinaryBuiltin(token.text());
+			if (op == Builtin::Invalid) {
+				return lhs;
+			}
+
+			auto op_info = getBuiltinInfo(op);
+			if (!op_info.is_operator) {
 				return lhs;
 			}
 
@@ -148,30 +206,33 @@ struct ParserHelper {
 			}
 
 			if (eat_token(iter, end)) {
-				p.error(token.meta(), errors::expected_expression);
+				p.error(token.meta(), errors::expected_expression + " 171");
 				return nullptr;
 			}
 
 			auto rhs = parseExpressionPrimary(p, iter, end);
 			if (!rhs) {
-				p.error(token.meta(), errors::expected_expression);
+				p.error(token.meta(), errors::expected_expression + " 177");
 				return nullptr;
 			}
 
 			while (true) {
+				if (iter == end) {
+					break;
+				}
+
 				auto next_token = *iter;
-				auto next_op = getBuiltin(next_token.text());
-				auto next_op_info = getOperatorInfo(next_op);
+				auto next_op = getBinaryBuiltin(next_token.text());
+				auto next_op_info = getBuiltinInfo(next_op);
 
 				if (!next_op_info.is_binary) {
 					break;
 				}
 
-
-				auto op_info = getOperatorInfo(next_op);
+				auto op_info = getBuiltinInfo(next_op);
 				auto next_token_precedence = op_info.precedence;
 
-				if (op_info.left_associative) {
+				if (op_info.binding_direction == BindingDirection::LeftAssociative) {
 					if (next_token_precedence <= token_precedence) {
 						break;
 					}
@@ -181,15 +242,25 @@ struct ParserHelper {
 					}
 				}
 
-				rhs = parseOperator(p, iter, end, rhs, next_token_precedence);
+				rhs = parseBinaryOperator(p, iter, end, rhs, next_token_precedence);
 				if (!rhs) {
-					p.error(next_token.meta(), errors::expected_expression);
+					p.error(next_token.meta(), errors::expected_expression + " 205");
 					return nullptr;
 				}
 			}
 
 			lhs = make_shared<BinaryOperatorNode>(token.meta(), op, lhs, rhs);
 		}
+	}
+
+	// <expr> ::= (<expr>) | <identifier> | <number-literal> | <string-literal> | <func-call> | <bin-op-expr> | <unary-op-expr>
+	static shared_ptr<ASTNode> parseExpression(Parser& p, TokenIter& iter, const TokenIter& end) {
+		if (iter == end) {
+			return nullptr;
+		}
+
+		auto expr = parseUnaryOperator(p, iter, end, nullptr);
+		return parseBinaryOperator(p, iter, end, expr, 0);
 	}
 
 	// <assignment> ::= <expr> <assignment-bin-op> <expr> | <assignment-unary-op> <lvalue>
