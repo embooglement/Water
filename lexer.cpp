@@ -146,7 +146,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 						push_token(TokenType::Comment, comment);
 					}
 				} else {
-					if (current_char == '\n' || current_char == eof) {
+					if (current_char == '\n' || !has_input()) {
 						push_token(TokenType::Comment, comment);
 						break;
 					}
