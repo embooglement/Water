@@ -85,12 +85,30 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			push_token(type, identifier);
 		} else if (isdigit(current_char)) {
 			string number_literal = to_string(current_char);
+			bool missing_fractional_part = false;
+
 			while (has_input() && isdigit(peek())) {
 				current_char = get_next_char();
 				number_literal += current_char;
 			}
 
-			push_token(TokenType::NumberLiteral, number_literal);
+			if (has_input() && peek() == '.') {
+				get_next_char();
+				number_literal += '.';
+				missing_fractional_part = true;
+
+				while (has_input() && isdigit(peek())) {
+					missing_fractional_part = false;
+					current_char = get_next_char();
+					number_literal += current_char;
+				}
+			}
+
+			if (missing_fractional_part) {
+				invalid_token("missing fractional part of number literal");
+			} else {
+				push_token(TokenType::NumberLiteral, number_literal);
+			}
 		} else if (current_char == '\"') {
 			string string_literal = "";
 			bool closed = false;
