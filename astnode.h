@@ -7,14 +7,17 @@
 
 #include "constants.h"
 #include "token.h"
+#include "value.h"
 
-// TODO: eventually this will have a virtual codegen function
+void indentOutput(std::ostream& out, int indent);
+
 class ASTNode {
 public:
 	ASTNode(const TokenMetaData& meta);
 	virtual void output(std::ostream& out, int indent = 0) const = 0;
 	virtual ~ASTNode() {}
 	const TokenMetaData& meta() const;
+	virtual std::shared_ptr<Value> evaluate() const;
 protected:
 	TokenMetaData _meta;
 };
@@ -31,6 +34,7 @@ class NumberLiteralNode : public ASTNode {
 public:
 	NumberLiteralNode(const TokenMetaData& meta, const std::string& number);
 	virtual void output(std::ostream& out, int indent = 0) const;
+	virtual std::shared_ptr<Value> evaluate() const override;
 private:
 	double _number;
 };
@@ -47,6 +51,7 @@ class BinaryOperatorNode : public ASTNode {
 public:
 	BinaryOperatorNode(const TokenMetaData& meta, Builtin op, std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right);
 	virtual void output(std::ostream& out, int indent = 0) const;
+	virtual std::shared_ptr<Value> evaluate() const override;
 private:
 	Builtin _op;
 	std::shared_ptr<ASTNode> _left;
@@ -57,6 +62,7 @@ class UnaryOperatorNode : public ASTNode {
 public:
 	UnaryOperatorNode(const TokenMetaData& meta, Builtin op, std::shared_ptr<ASTNode> expr);
 	virtual void output(std::ostream& out, int indent = 0) const;
+	virtual std::shared_ptr<Value> evaluate() const override;
 private:
 	Builtin _op;
 	std::shared_ptr<ASTNode> _expr;
@@ -106,7 +112,5 @@ class AssignmentBinaryOpNode : public AssignmentNode {
 class AssignmentUnaryOpNode : public AssignmentNode {
 	// TODO: implement
 };
-
-void indentOutput(std::ostream& out, int indent);
 
 #endif

@@ -1,3 +1,4 @@
+#include <cmath>
 #include "astnode.h"
 
 using namespace std;
@@ -10,6 +11,14 @@ void indentOutput(ostream& out, int indent) {
 	}
 }
 
+/* ===== Exceptions ===== */
+
+class EvaluationError : public runtime_error {
+public:
+	EvaluationError(const string& error_message)
+		: runtime_error(error_message) {}
+};
+
 /* ===== ASTNode ===== */
 
 ASTNode::ASTNode(const TokenMetaData& meta)
@@ -17,6 +26,10 @@ ASTNode::ASTNode(const TokenMetaData& meta)
 
 const TokenMetaData& ASTNode::meta() const {
 	return _meta;
+}
+
+shared_ptr<Value> ASTNode::evaluate() const {
+	throw EvaluationError("evaluate not implemented");
 }
 
 /* ===== IdentifierNode ===== */
@@ -37,6 +50,10 @@ NumberLiteralNode::NumberLiteralNode(const TokenMetaData& meta, const string& nu
 void NumberLiteralNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
 	out << _number;
+}
+
+shared_ptr<Value> NumberLiteralNode::evaluate() const {
+	return make_shared<NumberValue>(_number);
 }
 
 /* ===== StringLiteralNode ===== */
@@ -67,7 +84,49 @@ void BinaryOperatorNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-/* ===== BinaryOperatorNode ===== */
+shared_ptr<Value> BinaryOperatorNode::evaluate() const {
+	double result;
+	auto lhs = _left->evaluate();
+	auto rhs = _right->evaluate();
+
+	if (lhs->type() != ValueType::Number) {
+		throw EvaluationError("type of left hand side of binary operator invalid");
+	}
+
+	if (rhs->type() != ValueType::Number) {
+		throw EvaluationError("type of right hand side of binary operator invalid");
+	}
+
+	double lhs_value = static_pointer_cast<NumberValue>(lhs)->valueOf();
+	double rhs_value = static_pointer_cast<NumberValue>(rhs)->valueOf();
+
+	switch (_op) {
+		case Builtin::Addition:
+			result = lhs_value + rhs_value;
+			break;
+		case Builtin::Subtraction:
+			result = lhs_value - rhs_value;
+			break;
+		case Builtin::Multiplication:
+			result = lhs_value * rhs_value;
+			break;
+		case Builtin::Division:
+			result = lhs_value / rhs_value;
+			break;
+		case Builtin::Modulus:
+			result = fmod(lhs_value, rhs_value);
+			break;
+		case Builtin::Exponent:
+			result = pow(lhs_value, rhs_value);
+			break;
+		default:
+			throw EvaluationError("operator not implemented");
+	}
+
+	return make_shared<NumberValue>(result);
+}
+
+/* ===== UnaryOperatorNode ===== */
 
 UnaryOperatorNode::UnaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> expr)
 	: ASTNode(meta), _op(op), _expr(expr) {}
@@ -81,6 +140,27 @@ void UnaryOperatorNode::output(ostream& out, int indent) const {
 
 	indentOutput(out, indent);
 	out << ")";
+}
+
+shared_ptr<Value> UnaryOperatorNode::evaluate() const {
+	double result;
+	auto expr = _expr->evaluate();
+
+	if (expr->type() != ValueType::Number) {
+		throw EvaluationError("type of operand of unary operator invalid");
+	}
+
+	double expr_value = static_pointer_cast<NumberValue>(expr)->valueOf();
+
+	switch (_op) {
+		case Builtin::Negation:
+			result = -expr_value;
+			break;
+		default:
+			throw EvaluationError("operator not implemented");
+	}
+
+	return make_shared<NumberValue>(result);
 }
 
 /* ===== FunctionCallNode ===== */
