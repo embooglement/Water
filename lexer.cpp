@@ -40,7 +40,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 		return input.peek();
 	};
 
-	auto get_next_char = [&]() -> char {
+	auto eat_char = [&]() -> char {
 		char c;
 		input >> c;
 
@@ -62,17 +62,17 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 
 	char current_char;
 	while (has_input()) {
-		current_char = get_next_char();
+		current_char = eat_char();
 		starting_column = current_column - 1;
 
 		if (isspace(current_char)) {
 			while (has_input() && isspace(peek())) {
-				get_next_char();
+				eat_char();
 			}
 		} else if (isalpha(current_char)) {
 			string identifier = to_string(current_char);
 			while (has_input() && isalpha(peek())) {
-				current_char = get_next_char();
+				current_char = eat_char();
 				identifier += current_char;
 			}
 
@@ -88,18 +88,18 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			bool missing_fractional_part = false;
 
 			while (has_input() && isdigit(peek())) {
-				current_char = get_next_char();
+				current_char = eat_char();
 				number_literal += current_char;
 			}
 
 			if (has_input() && peek() == '.') {
-				get_next_char();
+				eat_char();
 				number_literal += '.';
 				missing_fractional_part = true;
 
 				while (has_input() && isdigit(peek())) {
 					missing_fractional_part = false;
-					current_char = get_next_char();
+					current_char = eat_char();
 					number_literal += current_char;
 				}
 			}
@@ -114,7 +114,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			bool closed = false;
 
 			while (has_input()) {
-				current_char = get_next_char();
+				current_char = eat_char();
 				if (current_char == '\"') {
 					closed = true;
 					push_token(TokenType::StringLiteral, string_literal);
@@ -138,10 +138,10 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			}
 
 			while (has_input()) {
-				current_char = get_next_char();
+				current_char = eat_char();
 				if (is_block_comment) {
 					comment += current_char;
-					
+
 					if ((current_char == '#' && comment.back() == '-') || !has_input()) {
 						push_token(TokenType::Comment, comment);
 					}
@@ -167,7 +167,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 						break;
 					}
 
-					current_char = get_next_char();
+					current_char = eat_char();
 					op += current_char;
 					operator_was_matched = isBuiltin(op);
 				} else {
@@ -183,7 +183,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			string invalid_text = to_string(current_char);
 
 			while (has_input() && !isspace(peek())) {
-				current_char = get_next_char();
+				current_char = eat_char();
 				invalid_text += current_char;
 			}
 
