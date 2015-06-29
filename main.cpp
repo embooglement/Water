@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <memory>
+#include <map>
 #include <vector>
 #include <utility>
 
@@ -12,24 +14,56 @@
 using namespace std;
 
 void print_tokens(const vector<Token>& tokens);
-void test_ast();
 
-int main(int argc, const char** argv) {
+map<string, vector<string>> getParams(int argc, const char** argv) {
 	--argc;
 	++argv;
 
-	if (argc == 0) {
-		cout << "Missing file argument" << endl;
-		return -1;
+	map<string, vector<string>> params;
+
+	for (int i = 0; i < argc; ++i) {
+		string param = argv[i];
+
+		if (param == "-pt" || param == "--print-tokens") {
+			params["print-tokens"].push_back("true");
+		} else if (param == "-pa" || param == "--print-ast") {
+			params["print-ast"].push_back("true");
+		} else if (param == "-r") {
+			++i;
+			if (i >= argc) {
+				params["errors"].push_back("missing string to evaluate for -r option");
+				break;
+			}
+
+			params["evaluate"].push_back(argv[i]);
+		} else {
+			params["files"].push_back(argv[i]);
+		}
 	}
 
-	auto filename = argv[0];
-	ifstream file {filename};
+	return params;
+}
 
-	if (!file) {
-		cout << filename << " is not a valid filename" << endl;
-		return -1;
+bool paramIsSet(const map<string, vector<string>>& params, string param) {
+	auto it = params.find(param);
+	return it != end(params) && !it->second.empty();
+}
+
+void printParams(const map<string, vector<string>>& params) {
+	for (auto&& p : params) {
+		cout << "(" << p.first << ", [";
+		for (int i = 0; i < p.second.size(); ++i) {
+			cout << p.second[i];
+			if (i + 1 < p.second.size()) {
+				cout << ",";
+			}
+		}
+		cout << "])" << endl;
 	}
+}
+
+int main(int argc, const char** argv) {
+	auto params = getParams(argc, argv);
 
 	auto exit_with_errors = [](int error_count) {
 		cout << "Exiting with " << error_count << (error_count == 1 ? " error" : " errors") << endl;
@@ -39,29 +73,45 @@ int main(int argc, const char** argv) {
 	vector<Token> tokens;
 	int error_count;
 
-	tie(tokens, error_count) = lexer.tokenize(file, filename);
+	if (paramIsSet(params, "evaluate")) {
+		auto str = params["evaluate"][0];
+		istringstream stream {str};
+		tie(tokens, error_count) = lexer.tokenize(stream, "(command line)");
+	} else if (paramIsSet(params, "files")) {
+		auto filename = params["files"][0];
+		ifstream file {filename};
+		tie(tokens, error_count) = lexer.tokenize(file, filename);
+	} else {
+		tie(tokens, error_count) = lexer.tokenize(cin, "(stdin)");
+	}
 
 	if (error_count > 0) {
 		exit_with_errors(error_count);
 		return -1;
 	}
 
-	print_tokens(tokens);
+	if (paramIsSet(params, "print-tokens")) {
+		print_tokens(tokens);
+	}
 
 	Parser parser;
 	shared_ptr<ASTNode> tree;
 
 	tie(tree, error_count) = parser.parse(begin(tokens), end(tokens));
 
+	bool print_ast = paramIsSet(params, "print-ast");
 	if (tree) {
-		cout << "\nOutput: " << endl;
-		tree->output(cout, 0);
-		cout << endl;
+		if (print_ast) {
+			cout << "\nOutput: " << endl;
+			tree->output(cout, 0);
+			cout << endl;
 
-		cout << "\nEvaluate: " << endl;
+			cout << "\nEvaluate: " << endl;
+		}
+
 		tree->evaluate()->output(cout);
 		cout << endl;
-	} else {
+	} else if (print_ast) {
 		cout << "No parse tree produced" << endl;
 	}
 
@@ -86,94 +136,3 @@ void print_tokens(const vector<Token>& tokens) {
 			 << endl;
 	}
 }
-/*
-void test_ast() {
-	typedef shared_ptr<ASTNode> ASTPtr;
-	TokenMetaData meta;
-
-	auto make_operator = [&](string op, ASTPtr left, ASTPtr right) {
-		return make_shared<BinaryOperatorNode>(
-			meta,
-			getBuiltin(op),
-			left,
-			right
-		);
-	};
-
-	auto make_number = [&](int num) {
-		return make_shared<NumberLiteralNode>(
-			meta,
-			to_string(num)
-		);
-	};
-
-	auto make_string = [&](string s) {
-		return make_shared<StringLiteralNode>(
-			meta,
-			s
-		);
-	};
-
-	auto make_id = [&](string name) {
-		return make_shared<IdentifierNode>(
-			meta,
-			name
-		);
-	};
-
-	auto make_func = [&](string name, vector<ASTPtr> args) {
-		return make_shared<FunctionCallNode>(
-			meta,
-			make_id(name),
-			args
-		);
-	};
-
-	auto make_block = [&](vector<ASTPtr> statements) {
-		return make_shared<BlockNode>(
-			meta,
-			statements
-		);
-	};
-
-	auto root = make_block({
-		make_func(
-			"print",
-			{
-				make_operator(
-					"+",
-					make_operator(
-						"*",
-						make_number(2),
-						make_number(3)
-					),
-					make_operator(
-						"-",
-						make_number(5),
-						make_id("x")
-					)
-				),
-				make_operator(
-					"%",
-					make_id("x"),
-					make_id("y")
-				)
-			}
-		),
-		make_operator(
-			"=",
-			make_id("x"),
-			make_number(47)
-		),
-		make_func(
-			"foo",
-			{
-				make_string("hello"),
-				make_string("world")
-			}
-		)
-	});
-
-	root->output(cout, 0);
-}
-*/
