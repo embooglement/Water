@@ -55,6 +55,10 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 		return bool(input);
 	};
 
+	auto has_input = [&] {
+		return bool(input);
+	};
+
 	input >> noskipws;
 
 	char current_char;
@@ -62,12 +66,12 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 		starting_column = current_column - 1;
 
 		if (isspace(current_char)) {
-			while (isspace(peek())) {
+			while (has_input() && isspace(peek())) {
 				get_next_char(current_char);
 			}
 		} else if (isalpha(current_char)) {
 			string identifier = to_string(current_char);
-			while (isalpha(peek())) {
+			while (has_input() && isalpha(peek())) {
 				get_next_char(current_char);
 				identifier += current_char;
 			}
@@ -82,7 +86,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 		} else if (isdigit(current_char)) {
 			string number_literal = to_string(current_char);
 
-			while (isdigit(peek())) {
+			while (has_input() && isdigit(peek())) {
 				get_next_char(current_char);
 				number_literal += current_char;
 			}
@@ -92,7 +96,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			string string_literal = "";
 			bool closed = false;
 
-			while (get_next_char(current_char)) {
+			while (has_input() && get_next_char(current_char)) {
 				if (current_char == '\"') {
 					closed = true;
 					push_token(TokenType::StringLiteral, string_literal);
@@ -117,7 +121,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 
 			bool b = false;
 
-			while (get_next_char(current_char)) {
+			while (has_input() && get_next_char(current_char)) {
 				if (is_block_comment) {
 					if (current_char == '#' && comment.back() == '-') {
 						comment += current_char;
@@ -146,7 +150,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			string op = to_string(current_char);
 			bool operator_was_matched = isBuiltin(op);
 
-			while (true) {
+			while (has_input()) {
 				char peeked = peek();
 
 				if (issymbol(peeked)) {
@@ -170,7 +174,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 		} else {
 			string invalid_text = to_string(current_char);
 
-			while (!isspace(peek())) {
+			while (has_input() && !isspace(peek())) {
 				get_next_char(current_char);
 				invalid_text += current_char;
 			}
