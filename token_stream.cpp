@@ -4,7 +4,11 @@ TokenStream::TokenStream(TokenIter begin, TokenIter end)
 	: _current(begin), _end(end) {}
 
 bool TokenStream::hasNext() const {
-	return _current != _end;
+	return !empty();
+}
+
+bool TokenStream::empty() const {
+	return _current == _end;
 }
 
 Token TokenStream::get() const {

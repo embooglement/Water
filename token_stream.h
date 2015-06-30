@@ -10,7 +10,7 @@ class TokenStream {
 public:
 	TokenStream(TokenIter begin, TokenIter end);
 	bool hasNext() const;
-	// TODO: add a function that does !hasNext()
+	bool empty() const;
 	Token get() const;
 	void eat();
 private:

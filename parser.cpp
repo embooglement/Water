@@ -20,7 +20,7 @@ struct ParserHelper {
 	}
 
 	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenStream& tokens) {
-		if (!tokens.hasNext()) {
+		if (tokens.empty()) {
 			return nullptr;
 		}
 
@@ -34,7 +34,7 @@ struct ParserHelper {
 				if (token.text() == "print") {
 					allow_function_call = true;
 					tokens.eat();
-					input_ended = !tokens.hasNext();
+					input_ended = tokens.empty();
 					expr = make_shared<IdentifierNode>(token.meta(), "print");
 					break;
 				}
@@ -42,7 +42,7 @@ struct ParserHelper {
 			case TokenType::Operator: {
 				if (isBuiltin(token.text(), Builtin::OpenParen)) {
 					tokens.eat();
-					if (!tokens.hasNext()) {
+					if (tokens.empty()) {
 						p.error(token.meta(), errors::expected_expression + " 39");
 						return nullptr;
 					}
@@ -60,7 +60,7 @@ struct ParserHelper {
 					}
 
 					tokens.eat();
-					input_ended = !tokens.hasNext();
+					input_ended = tokens.empty();
 				} else {
 					return parseUnaryOperator(p, tokens, nullptr);
 				}
@@ -68,17 +68,17 @@ struct ParserHelper {
 			case TokenType::Identifier: {
 				allow_function_call = true;
 				tokens.eat();
-				input_ended = !tokens.hasNext();
+				input_ended = tokens.empty();
 				expr = make_shared<IdentifierNode>(token.meta(), token.text());
 			} break;
 			case TokenType::NumberLiteral: {
 				tokens.eat();
-				input_ended = !tokens.hasNext();
+				input_ended = tokens.empty();
 				expr = make_shared<NumberLiteralNode>(token.meta(), token.text());
 			} break;
 			case TokenType::StringLiteral: {
 				tokens.eat();
-				input_ended = !tokens.hasNext();
+				input_ended = tokens.empty();
 				expr = make_shared<StringLiteralNode>(token.meta(), token.text());
 			} break;
 			default:
@@ -96,7 +96,7 @@ struct ParserHelper {
 		auto next_token = tokens.get();
 		if (allow_function_call && isBuiltin(next_token.text(), Builtin::OpenFunctionCall)) {
 			tokens.eat();
-			if (!tokens.hasNext()) {
+			if (tokens.empty()) {
 				p.error(next_token.meta(), errors::expected_closing_func_call);
 				return nullptr;
 			}
@@ -122,7 +122,7 @@ struct ParserHelper {
 				}
 
 				tokens.eat();
-				if (!tokens.hasNext()) {
+				if (tokens.empty()) {
 					p.error(next_token.meta(), errors::expected_closing_func_call);
 				}
 			}
@@ -141,7 +141,7 @@ struct ParserHelper {
 	}
 
 	static shared_ptr<ASTNode> parseUnaryOperator(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
-		if (!tokens.hasNext()) {
+		if (tokens.empty()) {
 			return lhs;
 		}
 
@@ -162,7 +162,7 @@ struct ParserHelper {
 		}
 
 		tokens.eat();
-		bool input_ended = !tokens.hasNext();
+		bool input_ended = tokens.empty();
 
 		if (!lhs) {
 			if (input_ended) {
@@ -182,7 +182,7 @@ struct ParserHelper {
 
 	static shared_ptr<ASTNode> parseBinaryOperator(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs, int min_precedence) {
 		while (true) {
-			if (!tokens.hasNext()) {
+			if (tokens.empty()) {
 				return lhs;
 			}
 
@@ -209,7 +209,7 @@ struct ParserHelper {
 			}
 
 			tokens.eat();
-			if (!tokens.hasNext()) {
+			if (tokens.empty()) {
 				p.error(token.meta(), errors::expected_expression + " 171");
 				return nullptr;
 			}
@@ -221,7 +221,7 @@ struct ParserHelper {
 			}
 
 			while (true) {
-				if (!tokens.hasNext()) {
+				if (tokens.empty()) {
 					break;
 				}
 
@@ -259,7 +259,7 @@ struct ParserHelper {
 
 	// <expr> ::= (<expr>) | <identifier> | <number-literal> | <string-literal> | <func-call> | <bin-op-expr> | <unary-op-expr>
 	static shared_ptr<ASTNode> parseExpression(Parser& p, TokenStream& tokens) {
-		if (!tokens.hasNext()) {
+		if (tokens.empty()) {
 			return nullptr;
 		}
 
@@ -287,7 +287,7 @@ struct ParserHelper {
 pair<shared_ptr<ASTNode>, int> Parser::parse(TokenStream& tokens) {
 	_error_count = 0;
 
-	if (!tokens.hasNext()) {
+	if (tokens.empty()) {
 		return { nullptr, 0 };
 	}
 
