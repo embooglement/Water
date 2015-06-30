@@ -71,7 +71,7 @@ int main(int argc, const char** argv) {
 
 	Lexer lexer;
 	vector<Token> tokens;
-	int error_count;
+	int error_count = 0;
 
 	if (paramIsSet(params, "evaluate")) {
 		auto str = params["evaluate"][0];
@@ -80,7 +80,13 @@ int main(int argc, const char** argv) {
 	} else if (paramIsSet(params, "files")) {
 		auto filename = params["files"][0];
 		ifstream file {filename};
-		tie(tokens, error_count) = lexer.tokenize(file, filename);
+
+		if (file.is_open()) {
+			tie(tokens, error_count) = lexer.tokenize(file, filename);
+		} else {
+			++error_count;
+			cerr << "ERROR: " << filename << " not found" << endl;
+		}
 	} else {
 		tie(tokens, error_count) = lexer.tokenize(cin, "(stdin)");
 	}
