@@ -94,10 +94,11 @@ int main(int argc, const char** argv) {
 		print_tokens(tokens);
 	}
 
+	TokenStream token_stream {begin(tokens), end(tokens)};
 	Parser parser;
 	shared_ptr<ASTNode> tree;
 
-	tie(tree, error_count) = parser.parse(begin(tokens), end(tokens));
+	tie(tree, error_count) = parser.parse(token_stream);
 
 	bool print_ast = paramIsSet(params, "print-ast");
 	if (tree) {
@@ -105,7 +106,6 @@ int main(int argc, const char** argv) {
 			cout << "\nOutput: " << endl;
 			tree->output(cout, 0);
 			cout << endl;
-
 			cout << "\nEvaluate: " << endl;
 		}
 

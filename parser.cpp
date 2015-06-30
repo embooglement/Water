@@ -8,30 +8,24 @@
 
 using namespace std;
 
-// TODO: at some point, make a token streaming class, so that I don't need to keep track of end
-bool eat_token(TokenIter& iter, const TokenIter& end) {
-	++iter;
-	return iter == end;
-}
-
 struct ParserHelper {
 	// <block> ::= <statement>* | "{" <statement>* "}"
-	static shared_ptr<BlockNode> parseBlock(Parser& p, TokenIter& iter) {
+	static shared_ptr<BlockNode> parseBlock(Parser& p, TokenStream& tokens) {
 		return nullptr;
 	}
 
 	// <statement> ::= <expr>; | <declaration>; | <assignment>; | (<assignment>); | <control-statement>
-	static shared_ptr<StatementNode> parseStatement(Parser& p, TokenIter& iter) {
+	static shared_ptr<StatementNode> parseStatement(Parser& p, TokenStream& tokens) {
 		return nullptr;
 	}
 
-	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenIter& iter, const TokenIter& end) {
-		if (iter == end) {
+	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenStream& tokens) {
+		if (!tokens.hasNext()) {
 			return nullptr;
 		}
 
 		shared_ptr<ASTNode> expr;
-		auto token = *iter;
+		auto token = tokens.get();
 		bool input_ended = false;
 		bool allow_function_call = false;
 
@@ -39,46 +33,52 @@ struct ParserHelper {
 			case TokenType::Keyword: {
 				if (token.text() == "print") {
 					allow_function_call = true;
-					input_ended = eat_token(iter, end);
+					tokens.eat();
+					input_ended = !tokens.hasNext();
 					expr = make_shared<IdentifierNode>(token.meta(), "print");
 					break;
 				}
 			}
 			case TokenType::Operator: {
 				if (isBuiltin(token.text(), Builtin::OpenParen)) {
-					if (eat_token(iter, end)) {
+					tokens.eat();
+					if (!tokens.hasNext()) {
 						p.error(token.meta(), errors::expected_expression + " 39");
 						return nullptr;
 					}
 
-					expr = parseExpression(p, iter, end);
+					expr = parseExpression(p, tokens);
 					if (!expr) {
 						p.error(token.meta(), errors::expected_expression + " 45");
 						return nullptr;
 					}
 
-					auto next_token = *iter;
+					auto next_token = tokens.get();
 					if (!isBuiltin(next_token.text(), Builtin::CloseParen)) {
 						p.error(next_token.meta(), errors::expected_closing_paren);
 						return nullptr;
 					}
 
-					input_ended = eat_token(iter, end);
+					tokens.eat();
+					input_ended = !tokens.hasNext();
 				} else {
-					return parseUnaryOperator(p, iter, end, nullptr);
+					return parseUnaryOperator(p, tokens, nullptr);
 				}
 			} break;
 			case TokenType::Identifier: {
 				allow_function_call = true;
-				input_ended = eat_token(iter, end);
+				tokens.eat();
+				input_ended = !tokens.hasNext();
 				expr = make_shared<IdentifierNode>(token.meta(), token.text());
 			} break;
 			case TokenType::NumberLiteral: {
-				input_ended = eat_token(iter, end);
+				tokens.eat();
+				input_ended = !tokens.hasNext();
 				expr = make_shared<NumberLiteralNode>(token.meta(), token.text());
 			} break;
 			case TokenType::StringLiteral: {
-				input_ended = eat_token(iter, end);
+				tokens.eat();
+				input_ended = !tokens.hasNext();
 				expr = make_shared<StringLiteralNode>(token.meta(), token.text());
 			} break;
 			default:
@@ -93,9 +93,10 @@ struct ParserHelper {
 			return expr;
 		}
 
-		auto next_token = *iter;
+		auto next_token = tokens.get();
 		if (allow_function_call && isBuiltin(next_token.text(), Builtin::OpenFunctionCall)) {
-			if (eat_token(iter, end)) {
+			tokens.eat();
+			if (!tokens.hasNext()) {
 				p.error(next_token.meta(), errors::expected_closing_func_call);
 				return nullptr;
 			}
@@ -103,14 +104,14 @@ struct ParserHelper {
 			vector<shared_ptr<ASTNode>> arguments;
 
 			while (true) {
-				auto argument = parseExpression(p, iter, end);
+				auto argument = parseExpression(p, tokens);
 				if (!argument) {
 					break;
 				}
 
 				arguments.push_back(argument);
 
-				next_token = *iter;
+				next_token = tokens.get();
 				if (isBuiltin(next_token.text(), Builtin::CloseFunctionCall)) {
 					break;
 				}
@@ -120,46 +121,48 @@ struct ParserHelper {
 					return nullptr;
 				}
 
-				if (eat_token(iter, end)) {
+				tokens.eat();
+				if (!tokens.hasNext()) {
 					p.error(next_token.meta(), errors::expected_closing_func_call);
 				}
 			}
 
-			next_token = *iter;
+			next_token = tokens.get();
 			if (!isBuiltin(next_token.text(), Builtin::CloseFunctionCall)) {
 				p.error(next_token.meta(), errors::expected_closing_func_call);
 				return nullptr;
 			}
 
-			eat_token(iter, end);
+			tokens.eat();
 			expr = make_shared<FunctionCallNode>(token.meta(), expr, arguments);
 		}
 
 		return expr;
 	}
 
-	static shared_ptr<ASTNode> parseUnaryOperator(Parser& p, TokenIter& iter, const TokenIter& end, shared_ptr<ASTNode> lhs) {
-		if (iter == end) {
+	static shared_ptr<ASTNode> parseUnaryOperator(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
+		if (!tokens.hasNext()) {
 			return lhs;
 		}
 
-		auto token = *iter;
+		auto token = tokens.get();
 		auto token_type = token.type();
 		if (token_type != TokenType::Operator && token_type != TokenType::Keyword) {
-			return parseExpressionPrimary(p, iter, end);
+			return parseExpressionPrimary(p, tokens);
 		}
 
 		auto op = getUnaryBuiltin(token.text());
 		if (op == Builtin::Invalid) {
-			return parseExpressionPrimary(p, iter, end);
+			return parseExpressionPrimary(p, tokens);
 		}
 
 		auto op_info = getBuiltinInfo(op);
 		if (!op_info.is_operator) {
-			return parseExpressionPrimary(p, iter, end);
+			return parseExpressionPrimary(p, tokens);
 		}
 
-		bool input_ended = eat_token(iter, end);
+		tokens.eat();
+		bool input_ended = !tokens.hasNext();
 
 		if (!lhs) {
 			if (input_ended) {
@@ -167,8 +170,8 @@ struct ParserHelper {
 				return nullptr;
 			}
 
-			auto expr = parseUnaryOperator(p, iter, end, nullptr);
-			expr = parseBinaryOperator(p, iter, end, expr, op_info.precedence);
+			auto expr = parseUnaryOperator(p, tokens, nullptr);
+			expr = parseBinaryOperator(p, tokens, expr, op_info.precedence);
 
 			return make_shared<UnaryOperatorNode>(token.meta(), op, expr);
 		} else {
@@ -177,13 +180,13 @@ struct ParserHelper {
 		}
 	}
 
-	static shared_ptr<ASTNode> parseBinaryOperator(Parser& p, TokenIter& iter, const TokenIter& end, shared_ptr<ASTNode> lhs, int min_precedence) {
+	static shared_ptr<ASTNode> parseBinaryOperator(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs, int min_precedence) {
 		while (true) {
-			if (iter == end) {
+			if (!tokens.hasNext()) {
 				return lhs;
 			}
 
-			auto token = *iter;
+			auto token = tokens.get();
 			auto token_type = token.type();
 
 			if (token_type != TokenType::Operator && token_type != TokenType::Keyword) {
@@ -205,23 +208,24 @@ struct ParserHelper {
 				return lhs;
 			}
 
-			if (eat_token(iter, end)) {
+			tokens.eat();
+			if (!tokens.hasNext()) {
 				p.error(token.meta(), errors::expected_expression + " 171");
 				return nullptr;
 			}
 
-			auto rhs = parseExpressionPrimary(p, iter, end);
+			auto rhs = parseExpressionPrimary(p, tokens);
 			if (!rhs) {
 				p.error(token.meta(), errors::expected_expression + " 177");
 				return nullptr;
 			}
 
 			while (true) {
-				if (iter == end) {
+				if (!tokens.hasNext()) {
 					break;
 				}
 
-				auto next_token = *iter;
+				auto next_token = tokens.get();
 				auto next_op = getBinaryBuiltin(next_token.text());
 				auto next_op_info = getBuiltinInfo(next_op);
 
@@ -242,7 +246,7 @@ struct ParserHelper {
 					}
 				}
 
-				rhs = parseBinaryOperator(p, iter, end, rhs, next_token_precedence);
+				rhs = parseBinaryOperator(p, tokens, rhs, next_token_precedence);
 				if (!rhs) {
 					p.error(next_token.meta(), errors::expected_expression + " 205");
 					return nullptr;
@@ -254,40 +258,40 @@ struct ParserHelper {
 	}
 
 	// <expr> ::= (<expr>) | <identifier> | <number-literal> | <string-literal> | <func-call> | <bin-op-expr> | <unary-op-expr>
-	static shared_ptr<ASTNode> parseExpression(Parser& p, TokenIter& iter, const TokenIter& end) {
-		if (iter == end) {
+	static shared_ptr<ASTNode> parseExpression(Parser& p, TokenStream& tokens) {
+		if (!tokens.hasNext()) {
 			return nullptr;
 		}
 
-		auto expr = parseUnaryOperator(p, iter, end, nullptr);
-		return parseBinaryOperator(p, iter, end, expr, 0);
+		auto expr = parseUnaryOperator(p, tokens, nullptr);
+		return parseBinaryOperator(p, tokens, expr, 0);
 	}
 
 	// <assignment> ::= <expr> <assignment-bin-op> <expr> | <assignment-unary-op> <lvalue>
-	static shared_ptr<AssignmentNode> parseAssignment(Parser& p, TokenIter& iter) {
+	static shared_ptr<AssignmentNode> parseAssignment(Parser& p, TokenStream& tokens) {
 		return nullptr;
 	}
 
 	// <declaration> ::= "var" <identifier> | "var" <identifier> = <expr>
-	static shared_ptr<DeclarationNode> parseDeclaration(Parser& p, TokenIter& iter) {
+	static shared_ptr<DeclarationNode> parseDeclaration(Parser& p, TokenStream& tokens) {
 		return nullptr;
 	}
 
 	// <control-statement> ::= <if-statement> | <while-statement> | <for-statement>
-	static shared_ptr<ControlFlowNode> parseControlFlow(Parser& p, TokenIter& iter) {
+	static shared_ptr<ControlFlowNode> parseControlFlow(Parser& p, TokenStream& tokens) {
 		return nullptr;
 	}
 };
 
 // <top> ::= <block>
-pair<shared_ptr<ASTNode>, int> Parser::parse(TokenIter begin, TokenIter end) {
+pair<shared_ptr<ASTNode>, int> Parser::parse(TokenStream& tokens) {
 	_error_count = 0;
 
-	if (begin == end) {
+	if (!tokens.hasNext()) {
 		return { nullptr, 0 };
 	}
 
-	auto root = ParserHelper::parseExpression(*this, begin, end);
+	auto root = ParserHelper::parseExpression(*this, tokens);
 	return { root, _error_count };
 }
 
