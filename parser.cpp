@@ -43,13 +43,13 @@ struct ParserHelper {
 				if (isBuiltin(token.text(), Builtin::OpenParen)) {
 					tokens.eat();
 					if (tokens.empty()) {
-						p.error(token.meta(), errors::expected_expression + " 39");
+						p.error(token.meta(), errors::expected_expression);
 						return nullptr;
 					}
 
 					expr = parseExpression(p, tokens);
 					if (!expr) {
-						p.error(token.meta(), errors::expected_expression + " 45");
+						p.error(token.meta(), errors::expected_expression);
 						return nullptr;
 					}
 
@@ -210,13 +210,13 @@ struct ParserHelper {
 
 			tokens.eat();
 			if (tokens.empty()) {
-				p.error(token.meta(), errors::expected_expression + " 171");
+				p.error(token.meta(), errors::expected_expression);
 				return nullptr;
 			}
 
 			auto rhs = parseExpressionPrimary(p, tokens);
 			if (!rhs) {
-				p.error(token.meta(), errors::expected_expression + " 177");
+				p.error(token.meta(), errors::expected_expression);
 				return nullptr;
 			}
 
@@ -248,7 +248,7 @@ struct ParserHelper {
 
 				rhs = parseBinaryOperator(p, tokens, rhs, next_token_precedence);
 				if (!rhs) {
-					p.error(next_token.meta(), errors::expected_expression + " 205");
+					p.error(next_token.meta(), errors::expected_expression);
 					return nullptr;
 				}
 			}
