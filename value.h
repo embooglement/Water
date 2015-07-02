@@ -6,7 +6,8 @@
 
 enum class ValueType {
 	Number,
-	String
+	String,
+	Boolean
 };
 
 class Value {
@@ -35,6 +36,15 @@ public:
 	std::string valueOf() const;
 private:
 	std::string _str;
+};
+
+class BooleanValue : public Value {
+public:
+	BooleanValue(bool boolean);
+	virtual void output(std::ostream& out) const override;
+	bool valueOf() const;
+private:
+	bool _value;
 };
 
 #endif

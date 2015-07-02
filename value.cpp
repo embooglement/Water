@@ -36,3 +36,16 @@ void StringValue::output(std::ostream& out) const {
 string StringValue::valueOf() const {
 	return _str;
 }
+
+/* ===== BooleanValue ===== */
+
+BooleanValue::BooleanValue(bool boolean)
+	: Value(ValueType::Boolean), _value(boolean) {}
+
+void BooleanValue::output(ostream& out) const {
+	out << (valueOf() ? "true" : "false");
+}
+
+bool BooleanValue::valueOf() const {
+	return _value;
+}
