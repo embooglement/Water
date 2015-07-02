@@ -115,7 +115,11 @@ int main(int argc, const char** argv) {
 			cout << "\nEvaluate: " << endl;
 		}
 
-		tree->evaluate()->output(cout);
+		auto eval = tree->evaluate();
+		if (eval) {
+			eval->output(cout);
+		}
+
 		cout << endl;
 	} else if (print_ast) {
 		cout << "No parse tree produced" << endl;
