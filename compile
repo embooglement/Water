@@ -8,6 +8,6 @@ if [ $? ]; then
 	if [ "$1" == "debug" ]; then
 		gdb water --command=gdb_config
 	else
-		./water -r "2 + 2 * 3" 
+		./water test.h2o 
 	fi
 fi
