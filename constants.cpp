@@ -20,6 +20,9 @@ const map<Builtin, string> operators = {
 	{ Builtin::OpenFunctionCall, "(" },
 	{ Builtin::CloseFunctionCall, ")" },
 
+	{ Builtin::OpenControlFlowCondition, "(" },
+	{ Builtin::CloseControlFlowCondition, ")" },
+
 	{ Builtin::OpenIndex, "[" },
 	{ Builtin::CloseIndex, "]" },
 
@@ -60,7 +63,10 @@ const map<Builtin, string> operators = {
 	{ Builtin::LogicalOr, "or" },
 	{ Builtin::LogicalNot, "not" },
 
-	{ Builtin::Exists, "exists" }
+	{ Builtin::Exists, "exists" },
+
+	{ Builtin::IfStatement, "if" },
+	{ Builtin::ElseStatement, "else" }
 };
 
 const int assignment_level = 0;
@@ -136,6 +142,10 @@ bool isBuiltin(const string& op, Builtin builtin) {
 	}
 
 	return false;
+}
+
+bool isBuiltin(TokenType token_type) {
+	return token_type == TokenType::Keyword || token_type == TokenType::Operator;
 }
 
 Builtin getBinaryBuiltin(const string& op) {

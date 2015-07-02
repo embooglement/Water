@@ -42,6 +42,10 @@ void IdentifierNode::output(ostream& out, int indent) const {
 	out << _identifier;
 }
 
+const string& IdentifierNode::str() const {
+	return _identifier;
+}
+
 /* ===== NumberLiteralNode ===== */
 
 NumberLiteralNode::NumberLiteralNode(const TokenMetaData& meta, const string& number)
@@ -66,6 +70,10 @@ void StringLiteralNode::output(ostream& out, int indent) const {
 	out << "\"" << _str << "\"";
 }
 
+shared_ptr<Value> StringLiteralNode::evaluate() const {
+	return make_shared<StringValue>(_str);
+}
+
 /* ===== BinaryOperatorNode ===== */
 
 BinaryOperatorNode::BinaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> left, shared_ptr<ASTNode> right)
@@ -85,45 +93,48 @@ void BinaryOperatorNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> BinaryOperatorNode::evaluate() const {
-	double result;
+	auto as_number = [](const shared_ptr<Value>& var) {
+		return static_pointer_cast<NumberValue>(var)->valueOf();
+	};
+
 	auto lhs = _left->evaluate();
 	auto rhs = _right->evaluate();
 
-	if (lhs->type() != ValueType::Number) {
-		throw EvaluationError("type of left hand side of binary operator invalid");
-	}
-
-	if (rhs->type() != ValueType::Number) {
-		throw EvaluationError("type of right hand side of binary operator invalid");
-	}
-
-	double lhs_value = static_pointer_cast<NumberValue>(lhs)->valueOf();
-	double rhs_value = static_pointer_cast<NumberValue>(rhs)->valueOf();
-
 	switch (_op) {
+		// Arithmetic
 		case Builtin::Addition:
-			result = lhs_value + rhs_value;
-			break;
+			return make_shared<NumberValue>(as_number(lhs) + as_number(rhs));
 		case Builtin::Subtraction:
-			result = lhs_value - rhs_value;
-			break;
+			return make_shared<NumberValue>(as_number(lhs) - as_number(rhs));
 		case Builtin::Multiplication:
-			result = lhs_value * rhs_value;
-			break;
+			return make_shared<NumberValue>(as_number(lhs) * as_number(rhs));
 		case Builtin::Division:
-			result = lhs_value / rhs_value;
+			return make_shared<NumberValue>(as_number(lhs) / as_number(rhs));
 			break;
 		case Builtin::Modulus:
-			result = fmod(lhs_value, rhs_value);
-			break;
+			return make_shared<NumberValue>(fmod(as_number(lhs), as_number(rhs)));
 		case Builtin::Exponent:
-			result = pow(lhs_value, rhs_value);
-			break;
+			return make_shared<NumberValue>(pow(as_number(lhs), as_number(rhs)));
+
+		// Comparisons
+		case Builtin::LessThan:
+			return make_shared<BooleanValue>(as_number(lhs) < as_number(rhs));
+		case Builtin::LessThanOrEqual:
+			return make_shared<BooleanValue>(as_number(lhs) <= as_number(rhs));
+		case Builtin::GreaterThan:
+			return make_shared<BooleanValue>(as_number(lhs) > as_number(rhs));
+		case Builtin::GreaterThanOrEqual:
+			return make_shared<BooleanValue>(as_number(lhs) >= as_number(rhs));
+		case Builtin::EqualTo:
+			return make_shared<BooleanValue>(as_number(lhs) == as_number(rhs));
+		case Builtin::NotEqualTo:
+			return make_shared<BooleanValue>(as_number(lhs) != as_number(rhs));
+
 		default:
 			throw EvaluationError("operator not implemented");
 	}
 
-	return make_shared<NumberValue>(result);
+	return nullptr;
 }
 
 /* ===== UnaryOperatorNode ===== */
@@ -184,6 +195,25 @@ void FunctionCallNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
+shared_ptr<Value> FunctionCallNode::evaluate() const {
+	auto id = static_pointer_cast<IdentifierNode>(_caller);
+	if (id->str() == "print") {
+		for (auto&& argument : _arguments) {
+			auto expr = argument->evaluate();
+			if (expr) {
+				expr->output(cout);
+				cout << " ";
+			} else {
+				cout << "(undefined) ";
+			}
+		}
+
+		cout << endl;
+	}
+
+	return nullptr;
+}
+
 /* ===== BlockNode ===== */
 
 BlockNode::BlockNode(const TokenMetaData& meta, vector<shared_ptr<ASTNode>> statements)
@@ -191,27 +221,82 @@ BlockNode::BlockNode(const TokenMetaData& meta, vector<shared_ptr<ASTNode>> stat
 
 void BlockNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
-	out << "(block\n";
+	out << "(block" << endl;
 
 	for (auto&& statement : _statements) {
 		statement->output(out, indent + 1);
-		out << "\n";
+		out << endl;
 	}
 
 	indentOutput(out, indent);
-	out << ")" << endl;
+	out << ")";
 }
 
-/* ===== StatementkNode ===== */
+shared_ptr<Value> BlockNode::evaluate() const {
+	for (auto&& statement : _statements) {
+		statement->evaluate();
+	}
 
-StatementNode::StatementNode(const TokenMetaData& meta, shared_ptr<ASTNode> statement)
-	: ASTNode(meta), _statement(statement) {}
+	return nullptr;
+}
 
-void StatementNode::output(ostream& out, int indent) const {
+/* ===== IfStatementNode ===== */
+
+IfStatementNode::IfStatementNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> condition, std::shared_ptr<ASTNode> then_statement, std::shared_ptr<ASTNode> else_statement)
+	: ASTNode(meta), _condition(condition), _then(then_statement), _else(else_statement) {}
+
+void IfStatementNode::output(std::ostream& out, int indent) const {
 	indentOutput(out, indent);
-	out << "(statement\n";
-	_statement->output(out, indent + 1);
+	out << "(if" << endl;
+
+	{
+		indentOutput(out, indent + 1);
+		out << "(condition" << endl;
+		_condition->output(out, indent + 2);
+		out << endl;
+		indentOutput(out, indent + 1);
+		out << ")" << endl;
+	}
+
+	{
+		indentOutput(out, indent + 1);
+		out << "(then" << endl;
+		_then->output(out, indent + 2);
+		out << endl;
+		indentOutput(out, indent + 1);
+		out << ")" << endl;
+	}
+
+	if (_else) {
+		indentOutput(out, indent + 1);
+		out << "(else" << endl;
+		_else->output(out, indent + 2);
+		out << endl;
+		indentOutput(out, indent + 1);
+		out << ")" << endl;
+	}
 
 	indentOutput(out, indent);
 	out << ")";
+}
+
+shared_ptr<Value> IfStatementNode::evaluate() const {
+	auto condition = _condition->evaluate();
+
+	if (!condition) {
+		cout << "condition is null" << endl;
+	}
+
+	if (condition->type() != ValueType::Boolean) {
+		throw EvaluationError("type of condition is not Boolean");
+	}
+
+	bool condition_value = static_pointer_cast<BooleanValue>(condition)->valueOf();
+	if (condition_value) {
+		_then->evaluate();
+	} else {
+		_else->evaluate();
+	}
+
+	return nullptr;
 }

@@ -4,6 +4,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include "token.h"
 
 enum class Builtin {
 	Invalid = -1,
@@ -18,6 +19,9 @@ enum class Builtin {
 
 	OpenFunctionCall,
 	CloseFunctionCall,
+
+	OpenControlFlowCondition,
+	CloseControlFlowCondition,
 
 	OpenIndex,
 	CloseIndex,
@@ -46,11 +50,11 @@ enum class Builtin {
 	Exponent,
 	ExponentAssignment,
 
-	GreaterThan,
-	GreaterThanOrEqual,
-
 	LessThan,
 	LessThanOrEqual,
+
+	GreaterThan,
+	GreaterThanOrEqual,
 
 	EqualTo,
 	NotEqualTo,
@@ -59,7 +63,15 @@ enum class Builtin {
 	LogicalOr,
 	LogicalNot,
 
-	Exists
+	Exists,
+
+	VariableDeclarator,
+	ConstantDeclarator,
+
+	IfStatement,
+	ElseStatement,
+	WhileStatement,
+	ForStatement
 };
 
 extern const std::set<std::string> keywords;
@@ -84,6 +96,7 @@ extern const std::map<Builtin, BuiltinInfo> builtin_info;
 
 bool isBuiltin(const std::string& op);
 bool isBuiltin(const std::string& op, Builtin builtin);
+bool isBuiltin(TokenType token_type);
 
 Builtin getBinaryBuiltin(const std::string& op);
 Builtin getUnaryBuiltin(const std::string& op);
