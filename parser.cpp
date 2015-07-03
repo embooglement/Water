@@ -184,11 +184,23 @@ struct ParserHelper {
 
 		switch (token.type()) {
 			case TokenType::Keyword: {
-				if (token.text() == "print") {
+				const string& token_text = token.text();
+
+				if (token_text == "print") {
 					allow_function_call = true;
 					tokens.eat();
 					input_ended = tokens.empty();
 					expr = make_shared<IdentifierNode>(token.meta(), "print");
+					break;
+				} else if (token_text == "true") {
+					tokens.eat();
+					input_ended = tokens.empty();
+					expr = make_shared<BooleanLiteralNode>(token.meta(), true);
+					break;
+				} else if (token_text == "false") {
+					tokens.eat();
+					input_ended = tokens.empty();
+					expr = make_shared<BooleanLiteralNode>(token.meta(), false);
 					break;
 				}
 			}

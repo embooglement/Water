@@ -74,6 +74,19 @@ shared_ptr<Value> StringLiteralNode::evaluate() const {
 	return make_shared<StringValue>(_str);
 }
 
+/* ===== BooleanLiteralNode ===== */
+BooleanLiteralNode::BooleanLiteralNode(const TokenMetaData& meta, bool boolean)
+	: ASTNode(meta), _boolean(boolean) {}
+
+void BooleanLiteralNode::output(ostream& out, int indent) const {
+	indentOutput(out, indent);
+	out << (_boolean ? "true" : "false");
+}
+
+shared_ptr<Value> BooleanLiteralNode::evaluate() const {
+	return make_shared<BooleanValue>(_boolean);
+}
+
 /* ===== BinaryOperatorNode ===== */
 
 BinaryOperatorNode::BinaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> left, shared_ptr<ASTNode> right)

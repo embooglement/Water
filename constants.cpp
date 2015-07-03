@@ -5,7 +5,8 @@ using namespace std;
 const set<string> keywords = {
 	"print",
 	"if", "else", "while", "for",
-	"and", "or", "not"
+	"and", "or", "not",
+	"true", "false"
 };
 
 const map<Builtin, string> operators = {

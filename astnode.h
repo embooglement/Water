@@ -49,6 +49,15 @@ private:
 	std::string _str;
 };
 
+class BooleanLiteralNode : public ASTNode {
+public:
+	BooleanLiteralNode(const TokenMetaData& meta, bool boolean);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate() const override;
+private:
+	bool _boolean;
+};
+
 class BinaryOperatorNode : public ASTNode {
 public:
 	BinaryOperatorNode(const TokenMetaData& meta, Builtin op, std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right);
