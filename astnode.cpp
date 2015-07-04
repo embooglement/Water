@@ -106,9 +106,23 @@ void BinaryOperatorNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> BinaryOperatorNode::evaluate() const {
-	auto as_number = [](const shared_ptr<Value>& var) {
-		return static_pointer_cast<NumberValue>(var)->valueOf();
-	};
+	// Short circuit evaluate logical operators
+	switch (_op) {
+		case Builtin::LogicalAnd:
+			if (toBoolean(_left->evaluate())) {
+				return make_shared<BooleanValue>(toBoolean(_right->evaluate()));
+			} else {
+				return make_shared<BooleanValue>(false);
+			}
+		case Builtin::LogicalOr:
+			if (toBoolean(_left->evaluate())) {
+				return make_shared<BooleanValue>(true);
+			} else {
+				return make_shared<BooleanValue>(toBoolean(_right->evaluate()));
+			}
+		default:
+			break;
+	}
 
 	auto lhs = _left->evaluate();
 	auto rhs = _right->evaluate();
@@ -116,32 +130,32 @@ shared_ptr<Value> BinaryOperatorNode::evaluate() const {
 	switch (_op) {
 		// Arithmetic
 		case Builtin::Addition:
-			return make_shared<NumberValue>(as_number(lhs) + as_number(rhs));
+			return make_shared<NumberValue>(toNumber(lhs) + toNumber(rhs));
 		case Builtin::Subtraction:
-			return make_shared<NumberValue>(as_number(lhs) - as_number(rhs));
+			return make_shared<NumberValue>(toNumber(lhs) - toNumber(rhs));
 		case Builtin::Multiplication:
-			return make_shared<NumberValue>(as_number(lhs) * as_number(rhs));
+			return make_shared<NumberValue>(toNumber(lhs) * toNumber(rhs));
 		case Builtin::Division:
-			return make_shared<NumberValue>(as_number(lhs) / as_number(rhs));
+			return make_shared<NumberValue>(toNumber(lhs) / toNumber(rhs));
 			break;
 		case Builtin::Modulus:
-			return make_shared<NumberValue>(fmod(as_number(lhs), as_number(rhs)));
+			return make_shared<NumberValue>(fmod(toNumber(lhs), toNumber(rhs)));
 		case Builtin::Exponent:
-			return make_shared<NumberValue>(pow(as_number(lhs), as_number(rhs)));
+			return make_shared<NumberValue>(pow(toNumber(lhs), toNumber(rhs)));
 
 		// Comparisons
 		case Builtin::LessThan:
-			return make_shared<BooleanValue>(as_number(lhs) < as_number(rhs));
+			return make_shared<BooleanValue>(toNumber(lhs) < toNumber(rhs));
 		case Builtin::LessThanOrEqual:
-			return make_shared<BooleanValue>(as_number(lhs) <= as_number(rhs));
+			return make_shared<BooleanValue>(toNumber(lhs) <= toNumber(rhs));
 		case Builtin::GreaterThan:
-			return make_shared<BooleanValue>(as_number(lhs) > as_number(rhs));
+			return make_shared<BooleanValue>(toNumber(lhs) > toNumber(rhs));
 		case Builtin::GreaterThanOrEqual:
-			return make_shared<BooleanValue>(as_number(lhs) >= as_number(rhs));
+			return make_shared<BooleanValue>(toNumber(lhs) >= toNumber(rhs));
 		case Builtin::EqualTo:
-			return make_shared<BooleanValue>(as_number(lhs) == as_number(rhs));
+			return make_shared<BooleanValue>(toNumber(lhs) == toNumber(rhs));
 		case Builtin::NotEqualTo:
-			return make_shared<BooleanValue>(as_number(lhs) != as_number(rhs));
+			return make_shared<BooleanValue>(toNumber(lhs) != toNumber(rhs));
 
 		default:
 			throw EvaluationError("operator not implemented");
@@ -167,24 +181,20 @@ void UnaryOperatorNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> UnaryOperatorNode::evaluate() const {
-	double result;
 	auto expr = _expr->evaluate();
 
-	if (expr->type() != ValueType::Number) {
-		throw EvaluationError("type of operand of unary operator invalid");
-	}
-
-	double expr_value = static_pointer_cast<NumberValue>(expr)->valueOf();
-
 	switch (_op) {
+		// Arithmetic
 		case Builtin::Negation:
-			result = -expr_value;
-			break;
+			return make_shared<NumberValue>(-toNumber(expr));
+
+		// Logical
+		case Builtin::LogicalNot:
+			return make_shared<BooleanValue>(!toBoolean(expr));
+
 		default:
 			throw EvaluationError("operator not implemented");
 	}
-
-	return make_shared<NumberValue>(result);
 }
 
 /* ===== FunctionCallNode ===== */

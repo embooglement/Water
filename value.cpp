@@ -1,4 +1,3 @@
-#include <utility>
 #include "value.h"
 
 using namespace std;
@@ -14,7 +13,7 @@ ValueType Value::type() const {
 /* ===== NumberValue ===== */
 
 NumberValue::NumberValue(double number)
-	: Value(ValueType::Number), _number(number) {}
+	: Value(value_type), _number(number) {}
 
 void NumberValue::output(std::ostream& out) const {
 	out << valueOf();
@@ -27,7 +26,7 @@ double NumberValue::valueOf() const {
 /* ===== StringValue ===== */
 
 StringValue::StringValue(string str)
-	: Value(ValueType::String), _str(move(str)) {}
+	: Value(value_type), _str(move(str)) {}
 
 void StringValue::output(std::ostream& out) const {
 	out << valueOf();
@@ -40,7 +39,7 @@ string StringValue::valueOf() const {
 /* ===== BooleanValue ===== */
 
 BooleanValue::BooleanValue(bool boolean)
-	: Value(ValueType::Boolean), _value(boolean) {}
+	: Value(value_type), _value(boolean) {}
 
 void BooleanValue::output(ostream& out) const {
 	out << (valueOf() ? "true" : "false");
@@ -48,4 +47,16 @@ void BooleanValue::output(ostream& out) const {
 
 bool BooleanValue::valueOf() const {
 	return _value;
+}
+
+double toNumber(const std::shared_ptr<Value>& var) {
+	return var->valueAs<NumberValue>();
+}
+
+std::string toString(const std::shared_ptr<Value>& var) {
+	return var->valueAs<StringValue>();
+}
+
+bool toBoolean(const std::shared_ptr<Value>& var) {
+	return var->valueAs<BooleanValue>();
 }
