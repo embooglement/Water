@@ -1,7 +1,11 @@
 .DS_Store
 *.out
 *~
+.*~
 .settings
 water*
 todo.txt
-
+CMakeFiles
+CMakeCache.txt
+Makefile
+cmake_install.cmake

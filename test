@@ -1,0 +1,10 @@
+#!/bin/bash
+for file in tests/*.h2o
+do
+	./water $file > temp.txt
+	diff -q temp.txt "$file".expected
+done
+
+rm temp.txt
+
+# TODO: test -r
