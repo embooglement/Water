@@ -67,6 +67,7 @@ enum class Builtin {
 
 	VariableDeclarator,
 	ConstantDeclarator,
+	VariableDeclarationOperator,
 
 	IfStatement,
 	ElseStatement,

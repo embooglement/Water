@@ -11,6 +11,7 @@ namespace errors {
 	static const std::string expected_close_control_flow_condition = "expected closing parenthesis";
 	static const std::string expected_expression = "expected expression";
 	static const std::string expected_statement = "expected statement";
+	static const std::string expected_identifier = "expected identifier";
 	static const std::string expected_statement_delimiter = "expected semicolon";
 	static const std::string expected_argument_delimiter = "expected comma";
 	static const std::string expected_open_block = "expected opening curly brace";

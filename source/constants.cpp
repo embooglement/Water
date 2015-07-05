@@ -66,6 +66,10 @@ const map<Builtin, string> operators = {
 
 	{ Builtin::Exists, "exists" },
 
+	{ Builtin::VariableDeclarator, "var" },
+	{ Builtin::ConstantDeclarator, "let" },
+	{ Builtin::VariableDeclarationOperator, "=" },
+
 	{ Builtin::IfStatement, "if" },
 	{ Builtin::ElseStatement, "else" }
 };

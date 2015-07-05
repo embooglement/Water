@@ -5,8 +5,10 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <unordered_map>
 
 enum class ValueType {
+	Null,
 	Number,
 	String,
 	Boolean
@@ -18,9 +20,16 @@ public:
 		: std::runtime_error("invalid type conversion") {}
 };
 
+class DeclarationError : public std::runtime_error {
+public:
+	DeclarationError(const std::string& identifier)
+		: std::runtime_error("invalid declaration: " + identifier + " is already defined") {}
+};
+
 class Value {
 public:
 	ValueType type() const;
+	bool isConst() const;
 	virtual void output(std::ostream& out) const = 0;
 
 	template <typename Type>
@@ -33,15 +42,16 @@ public:
 	}
 
 protected:
-	Value(ValueType type);
+	Value(ValueType type, bool is_const);
 private:
 	ValueType _type;
+	bool _is_const;
 };
 
 class NumberValue : public Value {
 public:
 	static const ValueType value_type = ValueType::Number;
-	NumberValue(double number);
+	NumberValue(bool is_const, double number);
 	virtual void output(std::ostream& out) const override;
 	double valueOf() const;
 private:
@@ -51,7 +61,7 @@ private:
 class StringValue : public Value {
 public:
 	static const ValueType value_type = ValueType::String;
-	StringValue(std::string str);
+	StringValue(bool is_const, std::string str);
 	virtual void output(std::ostream& out) const override;
 	std::string valueOf() const;
 private:
@@ -61,7 +71,7 @@ private:
 class BooleanValue : public Value {
 public:
 	static const ValueType value_type = ValueType::Boolean;
-	BooleanValue(bool boolean);
+	BooleanValue(bool is_const, bool boolean);
 	virtual void output(std::ostream& out) const override;
 	bool valueOf() const;
 private:
@@ -71,5 +81,8 @@ private:
 double toNumber(const std::shared_ptr<Value>& var);
 std::string toString(const std::shared_ptr<Value>& var);
 bool toBoolean(const std::shared_ptr<Value>& var);
+
+void addGlobalVariable(const std::string& identifier, const std::shared_ptr<Value>& var);
+std::shared_ptr<Value> getGlobalVariable(const std::string& identifier);
 
 #endif

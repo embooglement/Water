@@ -14,9 +14,9 @@ void indentOutput(std::ostream& out, int indent);
 class ASTNode {
 public:
 	ASTNode(const TokenMetaData& meta);
-	virtual void output(std::ostream& out, int indent = 0) const = 0;
 	virtual ~ASTNode() {}
 	const TokenMetaData& meta() const;
+	virtual void output(std::ostream& out, int indent = 0) const = 0;
 	virtual std::shared_ptr<Value> evaluate() const;
 protected:
 	TokenMetaData _meta;
@@ -26,6 +26,7 @@ class IdentifierNode : public ASTNode {
 public:
 	IdentifierNode(const TokenMetaData& meta, const std::string& identifier);
 	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate() const override;
 	const std::string& str() const;
 private:
 	std::string _identifier;
@@ -110,7 +111,14 @@ private:
 };
 
 class DeclarationNode : public ASTNode {
-	// TODO: implement
+public:
+	DeclarationNode(const TokenMetaData& meta, bool is_const, std::string identifier, std::shared_ptr<ASTNode> expr);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate() const override;
+private:
+	bool _is_const;
+	std::string _identifier;
+	std::shared_ptr<ASTNode> _expr;
 };
 
 class AssignmentNode : public ASTNode {

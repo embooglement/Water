@@ -144,21 +144,31 @@ struct ParserHelper {
 
 	// <statement> ::= <expr>; | <declaration>; | <assignment>; | (<assignment>); | <control-statement>
 	static shared_ptr<ASTNode> parseStatement(Parser& p, TokenStream& tokens) {
-		auto token = tokens.get();
-
-		if (isBuiltin(token.text(), Builtin::IfStatement)) {
-			return parseIfStatement(p, tokens);
-		}
-
-		auto expr = parseExpression(p, tokens);
-		if (!expr) {
-			// TODO: probably don't need this error message
-			p.error(token.meta(), errors::expected_statement);
+		if (tokens.empty()) {
 			return nullptr;
 		}
 
+		auto token = tokens.get();
+		auto token_text = token.text();
+
+		bool require_semicolon = true;
+		shared_ptr<ASTNode> statement = nullptr;
+
+		if (isBuiltin(token_text, Builtin::IfStatement)) {
+			require_semicolon = false;
+			statement = parseIfStatement(p, tokens);
+		} else if (isBuiltin(token_text, Builtin::VariableDeclarator) || isBuiltin(token_text, Builtin::ConstantDeclarator)) {
+			statement = parseDeclaration(p, tokens);
+		} else {
+			statement = parseExpression(p, tokens);
+		}
+
+		if (!require_semicolon) {
+			return statement;
+		}
+
 		if (tokens.empty()) {
-			p.error(expr->meta(), errors::expected_statement_delimiter);
+			p.error(statement->meta(), errors::expected_statement_delimiter);
 			return nullptr;
 		}
 
@@ -169,7 +179,7 @@ struct ParserHelper {
 		}
 
 		tokens.eat();
-		return expr;
+		return statement;
 	}
 
 	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenStream& tokens) {
@@ -434,7 +444,58 @@ struct ParserHelper {
 
 	// <declaration> ::= "var" <identifier> | "var" <identifier> = <expr>
 	static shared_ptr<DeclarationNode> parseDeclaration(Parser& p, TokenStream& tokens) {
-		return nullptr;
+		if (tokens.empty()) {
+			return nullptr;
+		}
+
+		auto token = tokens.get();
+		auto declaration_meta = token.meta();
+		auto token_text = token.text();
+		bool is_const;
+
+		if (isBuiltin(token_text, Builtin::VariableDeclarator)) {
+			is_const = false;
+		} else if (isBuiltin(token_text, Builtin::ConstantDeclarator)) {
+			is_const = true;
+		} else {
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		if (tokens.empty()) {
+			p.error(token.meta(), errors::expected_identifier);
+			return nullptr;
+		}
+
+		token = tokens.get();
+
+		if (token.type() != TokenType::Identifier) {
+			p.error(token.meta(), errors::expected_identifier);
+			return nullptr;
+		}
+
+		auto id = token.text();
+		tokens.eat();
+
+		shared_ptr<ASTNode> expr = nullptr;
+
+		if (!tokens.empty()) {
+			token = tokens.get();
+
+			if (isBuiltin(token.text(), Builtin::VariableDeclarationOperator)) {
+				tokens.eat();
+
+				if (tokens.empty()) {
+					p.error(token.meta(), errors::expected_expression);
+					return nullptr;
+				}
+
+				expr = parseExpression(p, tokens);
+			}
+		}
+
+		return make_shared<DeclarationNode>(declaration_meta, is_const, id, expr);
 	}
 };
 
