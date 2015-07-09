@@ -6,30 +6,13 @@
 #include <memory>
 #include <utility>
 #include <unordered_map>
+#include "runtime_errors.h"
 
 enum class ValueType {
 	Null,
 	Number,
 	String,
 	Boolean
-};
-
-class TypeError : public std::runtime_error {
-public:
-	TypeError()
-		: std::runtime_error("invalid type conversion") {}
-};
-
-class DeclarationError : public std::runtime_error {
-public:
-	DeclarationError(const std::string& identifier)
-		: std::runtime_error("invalid declaration: " + identifier + " is already declared") {}
-};
-
-class UndefinedVariableError : public std::runtime_error {
-public:
-	UndefinedVariableError(const std::string& identifier)
-		: std::runtime_error("undefined variable name: " + identifier) {}
 };
 
 class Value {

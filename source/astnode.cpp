@@ -1,5 +1,6 @@
 #include <cmath>
 #include "astnode.h"
+#include "runtime_errors.h"
 
 using namespace std;
 
