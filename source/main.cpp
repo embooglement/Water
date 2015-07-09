@@ -115,7 +115,7 @@ int main(int argc, const char** argv) {
 			cout << "\nEvaluate: " << endl;
 		}
 
-		auto eval = tree->evaluate();
+		auto eval = tree->evaluate(Scope::getGlobalScope());
 		if (eval) {
 			eval->output(cout);
 		}

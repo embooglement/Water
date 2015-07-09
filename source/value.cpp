@@ -65,25 +65,3 @@ std::string toString(const std::shared_ptr<Value>& var) {
 bool toBoolean(const std::shared_ptr<Value>& var) {
 	return var->valueAs<BooleanValue>();
 }
-
-/* ===== Variables ===== */
-
-std::unordered_map<std::string, std::shared_ptr<Value>> global_variables;
-
-void addGlobalVariable(const string& identifier, const shared_ptr<Value>& var) {
-	auto it = global_variables.find(identifier);
-	if (it != end(global_variables)) {
-		throw DeclarationError(identifier);
-	}
-
-	global_variables[identifier] = var;
-}
-
-shared_ptr<Value> getGlobalVariable(const string& identifier) {
-	auto it = global_variables.find(identifier);
-	if (it == end(global_variables)) {
-		return nullptr;
-	} else {
-		return it->second;
-	}
-}

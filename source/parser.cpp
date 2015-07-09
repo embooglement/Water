@@ -56,7 +56,7 @@ struct ParserHelper {
 			}
 		}
 
-		return make_shared<BlockNode>(block_meta, statements);
+		return make_shared<BlockNode>(block_meta, has_open_brace, statements);
 	}
 
 	static shared_ptr<ASTNode> parseIfStatement(Parser& p, TokenStream& tokens) {

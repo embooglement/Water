@@ -23,7 +23,13 @@ public:
 class DeclarationError : public std::runtime_error {
 public:
 	DeclarationError(const std::string& identifier)
-		: std::runtime_error("invalid declaration: " + identifier + " is already defined") {}
+		: std::runtime_error("invalid declaration: " + identifier + " is already declared") {}
+};
+
+class UndefinedVariableError : public std::runtime_error {
+public:
+	UndefinedVariableError(const std::string& identifier)
+		: std::runtime_error("undefined variable name: " + identifier) {}
 };
 
 class Value {
@@ -81,8 +87,5 @@ private:
 double toNumber(const std::shared_ptr<Value>& var);
 std::string toString(const std::shared_ptr<Value>& var);
 bool toBoolean(const std::shared_ptr<Value>& var);
-
-void addGlobalVariable(const std::string& identifier, const std::shared_ptr<Value>& var);
-std::shared_ptr<Value> getGlobalVariable(const std::string& identifier);
 
 #endif
