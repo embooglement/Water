@@ -1,0 +1,11 @@
+let count_down = func(count) {
+	if (count == 0) {
+		print("Blast off!");
+		return;
+	}
+	
+	print(count);
+	count_down(count - 1);
+};
+
+count_down(5);

@@ -2,7 +2,8 @@
 for file in tests/*.h2o
 do
 	./water $file > temp.txt
-	diff -q temp.txt "$file".expected
+	sed -ie 's/\r/\n/' temp.txt "$file".expected
+	diff --brief --ignore-all-space temp.txt "$file".expected
 done
 
 rm temp.txt
