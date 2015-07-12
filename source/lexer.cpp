@@ -9,8 +9,12 @@
 
 using namespace std;
 
-static bool issymbol(char c) {
+static bool isSymbol(char c) {
 	return symbol_chars.count(c) > 0;
+}
+
+static bool isIdentifier(char c, bool allow_digits = false) {
+	return (isalpha(c) || c == '_') || (allow_digits && isdigit(c));
 }
 
 static string to_string(char c) {
@@ -69,9 +73,9 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			while (has_input() && isspace(peek())) {
 				eat_char();
 			}
-		} else if (isalpha(current_char)) {
+		} else if (isIdentifier(current_char)) {
 			string identifier = to_string(current_char);
-			while (has_input() && isalpha(peek())) {
+			while (has_input() && isIdentifier(peek(), true)) {
 				current_char = eat_char();
 				identifier += current_char;
 			}
@@ -144,6 +148,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 
 					if ((current_char == '#' && comment.back() == '-') || !has_input()) {
 						push_token(TokenType::Comment, comment);
+						break;
 					}
 				} else {
 					if (current_char == '\n' || !has_input()) {
@@ -154,14 +159,14 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 					comment += current_char;
 				}
 			}
-		} else if (issymbol(current_char)) {
+		} else if (isSymbol(current_char)) {
 			string op = to_string(current_char);
 			bool operator_was_matched = isBuiltin(op);
 
 			while (has_input()) {
 				char peeked = peek();
 
-				if (issymbol(peeked)) {
+				if (isSymbol(peeked)) {
 					if (operator_was_matched && !isBuiltin(op + peeked)) {
 						push_token(TokenType::Operator, op);
 						break;
