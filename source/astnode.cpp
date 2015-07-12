@@ -224,22 +224,19 @@ void FunctionCallNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> FunctionCallNode::evaluate(shared_ptr<Scope> scope) const {
-	auto id = static_pointer_cast<IdentifierNode>(_caller);
-	if (id->str() == "print") {
-		for (auto&& argument : _arguments) {
-			auto expr = argument->evaluate(scope);
-			if (expr) {
-				expr->output(cout);
-				cout << " ";
-			} else {
-				cout << "(undefined) ";
-			}
-		}
-
-		cout << endl;
+	auto caller = _caller->evaluate(scope);
+	if (caller->type() != ValueType::Function) {
+		throw TypeError();
 	}
 
-	return nullptr;
+	auto func = static_pointer_cast<FunctionValue>(caller);
+	vector<shared_ptr<Value>> arguments;
+
+	for (auto&& argument_node : _arguments) {
+		arguments.push_back(argument_node->evaluate(scope));
+	}
+
+	return func->call(scope, move(arguments));
 }
 
 /* ===== BlockNode ===== */
@@ -270,7 +267,6 @@ void BlockNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope> scope) const {
-	// TODO: only need to push new state if this is not the global block
 	shared_ptr<Scope> block_scope;
 
 	if (isNewScope()) {
@@ -280,7 +276,14 @@ shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope> scope) const {
 	}
 
 	for (auto&& statement : _statements) {
-		statement->evaluate(block_scope);
+		auto val = statement->evaluate(block_scope);
+
+		if (val && val->type() == ValueType::Sentinel) {
+			auto sentinel = static_pointer_cast<SentinelValue>(val);
+			if (sentinel->isReturn()) {
+				return val;
+			}
+		}
 	}
 
 	return nullptr;
@@ -330,6 +333,7 @@ shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope> scope) const {
 	auto condition = _condition->evaluate(scope);
 
 	if (!condition) {
+		// TODO: throw InterpretorError here or something
 		cout << "condition is null" << endl;
 	}
 
@@ -339,9 +343,9 @@ shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope> scope) const {
 
 	bool condition_value = static_pointer_cast<BooleanValue>(condition)->valueOf();
 	if (condition_value) {
-		_then->evaluate(scope->push());
-	} else {
-		_else->evaluate(scope->push());
+		return _then->evaluate(scope->push());
+	} else if (_else) {
+		return _else->evaluate(scope->push());
 	}
 
 	return nullptr;
@@ -376,4 +380,77 @@ shared_ptr<Value> DeclarationNode::evaluate(shared_ptr<Scope> scope) const {
 	}
 
 	return nullptr;
+}
+
+/* ===== FunctionDeclarationNode ===== */
+
+FunctionDeclarationNode::FunctionDeclarationNode(const TokenMetaData& meta, string identifier, vector<string> argument_names, shared_ptr<ASTNode> body)
+	: ASTNode(meta), _identifier(move(identifier)), _argument_names(move(argument_names)), _body(move(body)) {}
+
+void FunctionDeclarationNode::output(ostream& out, int indent) const {
+	indentOutput(out, indent);
+	out << "(decl func";
+
+	if (!_identifier.empty()) {
+		out << " " << _identifier;
+	}
+
+	out << endl;
+	indentOutput(out, indent + 1);
+	out << "(";
+
+	int arguments_count = _argument_names.size();
+
+	for (int i = 0; i < arguments_count; ++i) {
+		out << _argument_names[i];
+
+		if (i + 1 < arguments_count) {
+			out << " ";
+		}
+	}
+
+	out << ")" << endl;
+
+	_body->output(out, indent + 1);
+	out << endl;
+
+	indentOutput(out, indent);
+	out << ")";
+}
+
+shared_ptr<Value> FunctionDeclarationNode::evaluate(shared_ptr<Scope> scope) const {
+	return make_shared<FunctionValue>(_identifier, _argument_names, _body);
+}
+
+/* ===== ReturnNode ===== */
+
+ReturnNode::ReturnNode(const TokenMetaData& meta, shared_ptr<ASTNode> expr)
+	: ASTNode(meta), _expr(move(expr)) {}
+
+void ReturnNode::output(ostream& out, int indent) const {
+	if (!_expr) {
+		indentOutput(out, indent);
+		out << "(return)";
+		return;
+	}
+
+	indentOutput(out, indent);
+	out << "(return" << endl;
+
+	_expr->output(out, indent + 1);
+	out << endl;
+
+	indentOutput(out, indent);
+	out << ")";
+}
+
+shared_ptr<Value> ReturnNode::evaluate(shared_ptr<Scope> scope) const {
+	if (_expr) {
+		auto val = _expr->evaluate(scope); // TODO: check for sentinelvalue?
+		if (val) {
+			scope->update(return_value_alias, move(val));
+		}
+	}
+
+	return make_shared<SentinelValue>();
 }

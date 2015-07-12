@@ -59,6 +59,7 @@ struct ParserHelper {
 		return make_shared<BlockNode>(block_meta, has_open_brace, statements);
 	}
 
+	// <if-statement> ::= "if" "(" <expr> ")" <block-or-statement> ["else" <block-or-statement>]
 	static shared_ptr<ASTNode> parseIfStatement(Parser& p, TokenStream& tokens) {
 		auto token = tokens.get();
 		auto if_meta = token.meta();
@@ -182,6 +183,97 @@ struct ParserHelper {
 		return statement;
 	}
 
+	// <func-decl> ::= "func" "(" <id>* ")" <block>
+	static shared_ptr<ASTNode> parseFunctionDeclaration(Parser& p, TokenStream& tokens) {
+		// TODO: pass identifiers from declarations into here somehow
+
+		if (tokens.empty()) {
+			return nullptr;
+		}
+
+		auto token = tokens.get();
+		auto function_decl_meta = token.meta();
+
+		if (!isBuiltin(token.text(), Builtin::FunctionDeclaration)) {
+			p.error(token.meta(), errors::expected_function_declaration);
+			return nullptr;
+		}
+
+		tokens.eat();
+		token = tokens.get();
+
+		if (!isBuiltin(token.text(), Builtin::FunctionOpenArgumentList)) {
+			p.error(token.meta(), errors::expected_argument_list);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		vector<string> arguments;
+
+		bool require_identifier = false;
+
+		while (true) {
+			if (tokens.empty()) {
+				if (require_identifier) {
+					p.error(token.meta(), errors::expected_identifier);
+				} else {
+					p.error(token.meta(), errors::expected_close_func_declaration);
+				}
+
+				return nullptr;
+			}
+
+			token = tokens.get();
+
+			if (isBuiltin(token.text(), Builtin::FunctionCloseArgumentList)) {
+				if (require_identifier) {
+					p.error(token.meta(), errors::expected_identifier);
+					return nullptr;
+				}
+
+				tokens.eat();
+				break;
+			}
+
+			if (token.type() != TokenType::Identifier) {
+				p.error(token.meta(), errors::expected_identifier);
+				return nullptr;
+			}
+
+			require_identifier = false;
+			tokens.eat();
+			arguments.push_back(token.text());
+
+			if (tokens.empty()) {
+				p.error(token.meta(), errors::expected_close_func_declaration);
+				return nullptr;
+			}
+
+			auto next_token = tokens.get();
+			if (isBuiltin(next_token.text(), Builtin::ArgumentDelimiter)) {
+				require_identifier = true;
+				tokens.eat();
+			}
+		}
+
+		if (tokens.empty()) {
+			p.error(token.meta(), errors::expected_open_block);
+			return nullptr;
+		}
+
+		token = tokens.get();
+
+		if (!isBuiltin(token.text(), Builtin::OpenBlock)) {
+			p.error(token.meta(), errors::expected_open_block);
+			return nullptr;
+		}
+
+		auto body = parseBlock(p, tokens);
+		return make_shared<FunctionDeclarationNode>(function_decl_meta, "", arguments, body);
+	}
+
+	// <expr-primary> ::= <number-literal> | <string-literal> | <boolean-literal> | <function-decl> | <function-call>
 	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenStream& tokens) {
 		if (tokens.empty()) {
 			return nullptr;
@@ -196,22 +288,25 @@ struct ParserHelper {
 			case TokenType::Keyword: {
 				const string& token_text = token.text();
 
-				if (token_text == "print") {
-					allow_function_call = true;
+				if (isBuiltin(token_text, Builtin::TrueLiteral)) {
 					tokens.eat();
-					input_ended = tokens.empty();
-					expr = make_shared<IdentifierNode>(token.meta(), "print");
-					break;
-				} else if (token_text == "true") {
-					tokens.eat();
-					input_ended = tokens.empty();
 					expr = make_shared<BooleanLiteralNode>(token.meta(), true);
 					break;
-				} else if (token_text == "false") {
+				} else if (isBuiltin(token_text, Builtin::FalseLiteral)) {
 					tokens.eat();
-					input_ended = tokens.empty();
 					expr = make_shared<BooleanLiteralNode>(token.meta(), false);
 					break;
+				} else if (isBuiltin(token_text, Builtin::FunctionDeclaration)) {
+					expr = parseFunctionDeclaration(p, tokens);
+					if (!expr) {
+						return nullptr;
+					}
+					break;
+				} else if (isBuiltin(token_text, Builtin::Return)) {
+					auto return_meta = token.meta();
+					tokens.eat();
+					expr = parseExpression(p, tokens);
+					return make_shared<ReturnNode>(return_meta, expr);
 				}
 			}
 			case TokenType::Operator: {
@@ -241,17 +336,14 @@ struct ParserHelper {
 			case TokenType::Identifier: {
 				allow_function_call = true;
 				tokens.eat();
-				input_ended = tokens.empty();
 				expr = make_shared<IdentifierNode>(token.meta(), token.text());
 			} break;
 			case TokenType::NumberLiteral: {
 				tokens.eat();
-				input_ended = tokens.empty();
 				expr = make_shared<NumberLiteralNode>(token.meta(), token.text());
 			} break;
 			case TokenType::StringLiteral: {
 				tokens.eat();
-				input_ended = tokens.empty();
 				expr = make_shared<StringLiteralNode>(token.meta(), token.text());
 			} break;
 			default:
@@ -262,7 +354,7 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		if (input_ended) {
+		if (tokens.empty()) {
 			return expr;
 		}
 
@@ -313,6 +405,7 @@ struct ParserHelper {
 		return expr;
 	}
 
+	// <unary-op> ::= "-" <expr> | "not" <expr> | ...
 	static shared_ptr<ASTNode> parseUnaryOperator(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
 		if (tokens.empty()) {
 			return lhs;
@@ -352,6 +445,7 @@ struct ParserHelper {
 		}
 	}
 
+	// <bin-op> ::= <expr> "+" <expr> | <expr> "-" <expr> | ...
 	static shared_ptr<ASTNode> parseBinaryOperator(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs, int min_precedence) {
 		while (true) {
 			if (tokens.empty()) {

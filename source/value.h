@@ -5,15 +5,21 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <vector>
 #include <unordered_map>
 #include "runtime_errors.h"
 
 enum class ValueType {
 	Null,
+	Sentinel,
 	Number,
 	String,
-	Boolean
+	Boolean,
+	Function
 };
+
+class ASTNode;
+class Scope;
 
 class Value {
 public:
@@ -37,6 +43,14 @@ private:
 	bool _is_const;
 };
 
+class NullValue : public Value {
+public:
+	static const ValueType value_type = ValueType::Null;
+	NullValue();
+	virtual void output(std::ostream& out) const override;
+	std::nullptr_t valueOf() const;
+};
+
 class NumberValue : public Value {
 public:
 	static const ValueType value_type = ValueType::Number;
@@ -45,6 +59,14 @@ public:
 	double valueOf() const;
 private:
 	double _number;
+};
+
+class SentinelValue : public Value {
+public:
+	static const ValueType value_type = ValueType::Sentinel;
+	SentinelValue();
+	virtual void output(std::ostream& out) const override;
+	bool isReturn() const;
 };
 
 class StringValue : public Value {
@@ -67,8 +89,29 @@ private:
 	bool _value;
 };
 
+class FunctionValue : public Value {
+public:
+	static const ValueType value_type = ValueType::Function;
+	FunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
+	virtual void output(std::ostream& out) const override;
+	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope> scope, std::vector<std::shared_ptr<Value>> arguments) const;
+	std::string id() const;
+private:
+	std::string _identifier;
+	std::vector<std::string> _argument_names;
+	std::shared_ptr<ASTNode> _body;
+};
+
+class PrintFunctionValue : public FunctionValue {
+public:
+	PrintFunctionValue();
+	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope> scope, std::vector<std::shared_ptr<Value>> arguments) const override;
+};
+
 double toNumber(const std::shared_ptr<Value>& var);
 std::string toString(const std::shared_ptr<Value>& var);
 bool toBoolean(const std::shared_ptr<Value>& var);
+
+void setupGlobalScope();
 
 #endif

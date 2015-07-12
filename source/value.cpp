@@ -1,6 +1,23 @@
+#include <sstream>
 #include "value.h"
+#include "scope.h"
+#include "astnode.h"
 
 using namespace std;
+
+/* ===== Conversions ===== */
+
+double toNumber(const std::shared_ptr<Value>& var) {
+	return var->valueAs<NumberValue>();
+}
+
+std::string toString(const std::shared_ptr<Value>& var) {
+	return var->valueAs<StringValue>();
+}
+
+bool toBoolean(const std::shared_ptr<Value>& var) {
+	return var->valueAs<BooleanValue>();
+}
 
 /* ===== Value ===== */
 
@@ -13,6 +30,34 @@ ValueType Value::type() const {
 
 bool Value::isConst() const {
 	return _is_const;
+}
+
+/* ===== NullValue ===== */
+
+// TODO: should only really ever be one shared_ptr<NullValue>
+
+NullValue::NullValue()
+	: Value(value_type, true) {}
+
+void NullValue::output(ostream& out) const {
+	out << "(null)";
+}
+
+nullptr_t NullValue::valueOf() const {
+	return nullptr;
+}
+
+/* ===== SentinelValue ===== */
+
+SentinelValue::SentinelValue()
+	: Value(value_type, true) {}
+
+void SentinelValue::output(ostream& out) const {
+	out << "(sentinel)";
+}
+
+bool SentinelValue::isReturn() const {
+	return true;
 }
 
 /* ===== NumberValue ===== */
@@ -54,14 +99,65 @@ bool BooleanValue::valueOf() const {
 	return _value;
 }
 
-double toNumber(const std::shared_ptr<Value>& var) {
-	return var->valueAs<NumberValue>();
+/* ===== FunctionValue ===== */
+
+FunctionValue::FunctionValue(string identifier, vector<string> argument_names, shared_ptr<ASTNode> body)
+	: Value(value_type, true), _identifier(move(identifier)), _argument_names(move(argument_names)), _body(move(body)) {
+
+	if (_identifier.empty()) {
+		// TODO: print as hex value with proper formatting
+		_identifier = (ostringstream() << (void*)_body.get()).str();
+	}
 }
 
-std::string toString(const std::shared_ptr<Value>& var) {
-	return var->valueAs<StringValue>();
+void FunctionValue::output(ostream& out) const {
+	out << _identifier;
 }
 
-bool toBoolean(const std::shared_ptr<Value>& var) {
-	return var->valueAs<BooleanValue>();
+string FunctionValue::id() const {
+	return _identifier;
+}
+
+shared_ptr<Value> FunctionValue::call(shared_ptr<Scope> scope, vector<shared_ptr<Value>> arguments) const {
+	int arguments_passed_size = arguments.size();
+	int arguments_expected_size = _argument_names.size();
+
+	if (arguments.size() != _argument_names.size()) {
+		throw InvalidArgumentsCountError(id(), _argument_names.size(), arguments.size());
+	}
+
+	auto argument_scope = scope->push();
+	for (int i = 0; i < arguments_passed_size; ++i) {
+		argument_scope->overshadow(_argument_names[i], arguments[i]);
+	}
+
+	argument_scope->overshadow(return_value_alias, make_shared<NullValue>());
+	_body->evaluate(argument_scope);
+
+	return argument_scope->get(return_value_alias);
+}
+
+/* ===== PrintFunctionValue ===== */
+
+PrintFunctionValue::PrintFunctionValue()
+	: FunctionValue("print", {}, nullptr) {}
+
+shared_ptr<Value> PrintFunctionValue::call(shared_ptr<Scope> scope, vector<shared_ptr<Value>> arguments) const {
+	for (auto&& argument : arguments) {
+		if (argument) {
+			argument->output(cout);
+			cout << " ";
+		} else {
+			cout << "(undefined) ";
+		}
+	}
+
+	cout << endl;
+	return nullptr;
+}
+
+/* ==== GlobalVars ====*/
+
+void setupGlobalScope() {
+	Scope::addToGlobalScope("print", make_shared<PrintFunctionValue>());
 }

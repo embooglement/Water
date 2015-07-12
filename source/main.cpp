@@ -116,6 +116,7 @@ int main(int argc, const char** argv) {
 		}
 
 		try {
+			setupGlobalScope();
 			auto eval = tree->evaluate(Scope::getGlobalScope());
 			if (eval) {
 				eval->output(cout);

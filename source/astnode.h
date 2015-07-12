@@ -124,6 +124,26 @@ private:
 	std::shared_ptr<ASTNode> _expr;
 };
 
+class FunctionDeclarationNode : public ASTNode {
+public:
+	FunctionDeclarationNode(const TokenMetaData& meta, std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope> scope) const override;
+private:
+	std::string _identifier;
+	std::vector<std::string> _argument_names;
+	std::shared_ptr<ASTNode> _body;
+};
+
+class ReturnNode : public ASTNode {
+public:
+	ReturnNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> expr);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope> scope) const override;
+private:
+	std::shared_ptr<ASTNode> _expr;
+};
+
 class AssignmentNode : public ASTNode {
 	// TODO: implement
 };

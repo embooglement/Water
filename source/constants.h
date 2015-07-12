@@ -6,6 +6,8 @@
 #include <string>
 #include "token.h"
 
+const static std::string return_value_alias = "<return-value>";
+
 enum class Builtin {
 	Invalid = -1,
 
@@ -72,7 +74,15 @@ enum class Builtin {
 	IfStatement,
 	ElseStatement,
 	WhileStatement,
-	ForStatement
+	ForStatement,
+
+	TrueLiteral,
+	FalseLiteral,
+
+	FunctionDeclaration,
+	FunctionOpenArgumentList,
+	FunctionCloseArgumentList,
+	Return
 };
 
 extern const std::set<std::string> keywords;

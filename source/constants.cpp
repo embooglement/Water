@@ -2,11 +2,13 @@
 
 using namespace std;
 
+// TODO: calulate keywords based on Builtins
+
 const set<string> keywords = {
-	"print",
 	"if", "else", "while", "for",
 	"and", "or", "not",
-	"true", "false"
+	"true", "false",
+	"func", "return"
 };
 
 const map<Builtin, string> operators = {
@@ -71,7 +73,15 @@ const map<Builtin, string> operators = {
 	{ Builtin::VariableDeclarationOperator, "=" },
 
 	{ Builtin::IfStatement, "if" },
-	{ Builtin::ElseStatement, "else" }
+	{ Builtin::ElseStatement, "else" },
+
+	{ Builtin::TrueLiteral, "true" },
+	{ Builtin::FalseLiteral, "false" },
+
+	{ Builtin::FunctionDeclaration, "func" },
+	{ Builtin::FunctionOpenArgumentList, "(" },
+	{ Builtin::FunctionCloseArgumentList, ")" },
+	{ Builtin::Return, "return" }
 };
 
 const int assignment_level = 0;

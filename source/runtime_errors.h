@@ -24,4 +24,10 @@ public:
 		: std::runtime_error("Undefined variable name: " + identifier) {}
 };
 
+class InvalidArgumentsCountError : public std::runtime_error {
+public:
+	InvalidArgumentsCountError(const std::string& identifier, int expected, int passed)
+		: std::runtime_error("Incorrect number of arguments passed to " + identifier + ": expected " + std::to_string(expected) + " but recieved " + std::to_string(passed)) {}
+};
+
 #endif

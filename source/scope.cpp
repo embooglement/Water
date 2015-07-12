@@ -8,16 +8,44 @@ shared_ptr<Scope> Scope::global_scope = make_shared<Scope>(nullptr);
 Scope::Scope(shared_ptr<Scope> parent)
 	: _parent(move(parent)) {}
 
-void Scope::add(const string& identifier, shared_ptr<Value> val) {
+void Scope::add(string identifier, shared_ptr<Value> val) {
 	if (contains(identifier)) {
 		throw DeclarationError(identifier);
 	}
 
-	_vars[identifier] = move(val);
+	_vars.emplace(move(identifier), move(val));
+}
+
+void Scope::overshadow(string identifier, shared_ptr<Value> val) {
+	_vars.emplace(move(identifier), move(val));
 }
 
 void Scope::remove(const string& identifier) {
-	// TODO: implement
+	auto it = _vars.find(identifier);
+	if (it == end(_vars)) {
+		if (_parent) {
+			_parent->remove(identifier);
+			return;
+		}
+
+		throw UndefinedVariableError(identifier);
+	}
+
+	_vars.erase(identifier);
+}
+
+void Scope::update(const string& identifier, shared_ptr<Value> val) {
+	auto it = _vars.find(identifier);
+	if (it == end(_vars)) {
+		if (_parent) {
+			_parent->update(identifier, move(val));
+			return;
+		}
+
+		throw UndefinedVariableError(identifier);
+	}
+
+	_vars[identifier] = val;
 }
 
 shared_ptr<Value> Scope::get(const string& identifier) const {
@@ -51,4 +79,8 @@ shared_ptr<Scope> Scope::push() {
 
 shared_ptr<Scope> Scope::getGlobalScope() {
 	return global_scope;
+}
+
+void Scope::addToGlobalScope(string identifier, shared_ptr<Value> val) {
+	global_scope->add(move(identifier), move(val));
 }
