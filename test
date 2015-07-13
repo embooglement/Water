@@ -1,11 +1,9 @@
 #!/bin/bash
 for file in tests/*.h2o
 do
-	./water $file > temp.txt
-	sed -ie 's/\r/\n/' temp.txt "$file".expected
-	diff --brief --ignore-all-space temp.txt "$file".expected
+	./water "$file" > "$file".txt
+	diff --brief --strip-trailing-cr "$file".txt "$file".expected
+	rm "$file".txt
 done
-
-rm temp.txt
 
 # TODO: test -r
