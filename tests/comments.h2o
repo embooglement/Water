@@ -1,0 +1,16 @@
+print(1);
+# I'm a comment
+#! I'm also a comment!
+#-
+  I am a
+  multi
+  line 
+  comment
+-#
+
+print(2 + #- comment -# 2); # comment
+#-
+  print(3);
+-#
+
+# print(2);
