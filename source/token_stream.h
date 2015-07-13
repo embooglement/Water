@@ -8,11 +8,11 @@ typedef std::vector<Token>::const_iterator TokenIter;
 
 class TokenStream {
 public:
-	TokenStream(TokenIter begin, TokenIter end);
+	TokenStream(TokenIter begin, TokenIter end, bool ignore_comments = true);
 	bool hasNext() const;
 	bool empty() const;
 	Token get() const;
-	void eat();
+	void eat(bool ignore_comments = true);
 private:
 	TokenIter _current;
 	const TokenIter _end;
