@@ -123,7 +123,7 @@ int main(int argc, const char** argv) {
 			}
 		} catch (const exception& ex) {
 			++error_count;
-			cerr << ex.what();
+			cerr << ex.what() << endl;
 		}
 
 		cout << endl;
