@@ -10,7 +10,7 @@ using namespace std;
 
 struct ParserHelper {
 	// <block> ::= <statement>* | "{" <statement>* "}"
-	static shared_ptr<ASTNode> parseBlock(Parser& p, TokenStream& tokens) {
+	static shared_ptr<ASTNode> parseBlock(Parser& p, TokenStream& tokens, bool is_global_block = false) {
 		if (tokens.empty()) {
 			return nullptr;
 		}
@@ -22,18 +22,34 @@ struct ParserHelper {
 		bool has_open_brace = isBuiltin(token.text(), Builtin::OpenBlock);
 
 		if (has_open_brace) {
-			tokens.eat();
+			if (is_global_block) {
+				statements.push_back(parseBlock(p, tokens));
+			} else {
+				tokens.eat();
 
-			if (tokens.empty()) {
-				p.error(block_meta, errors::expected_close_block);
-				return nullptr;
+				if (tokens.empty()) {
+					p.error(block_meta, errors::expected_close_block);
+					return nullptr;
+				}
+
+				token = tokens.get();
 			}
-
-			token = tokens.get();
 		}
 
 		while (true) {
-			auto statement = parseStatement(p, tokens);
+			if (tokens.empty()) {
+				break;
+			}
+
+			shared_ptr<ASTNode> statement = nullptr;
+			token = tokens.get();
+
+			if (isBuiltin(token.text(), Builtin::OpenBlock)) {
+				statement = parseBlock(p, tokens);
+			} else {
+				statement = parseStatement(p, tokens);
+			}
+
 			if (!statement) {
 				break;
 			}
@@ -601,7 +617,7 @@ pair<shared_ptr<ASTNode>, int> Parser::parse(TokenStream& tokens) {
 		return { nullptr, 0 };
 	}
 
-	auto root = ParserHelper::parseBlock(*this, tokens);
+	auto root = ParserHelper::parseBlock(*this, tokens, true);
 	return { root, _error_count };
 }
 

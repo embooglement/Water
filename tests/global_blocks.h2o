@@ -1,0 +1,15 @@
+{
+	let x = 1;
+	print(x);
+}
+
+let x = 2;
+print(x);
+
+{
+	let y = 3;
+	print(y);
+}
+
+let y = 4;
+print(y);
