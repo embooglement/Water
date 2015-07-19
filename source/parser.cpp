@@ -23,7 +23,14 @@ struct ParserHelper {
 
 		if (has_open_brace) {
 			if (is_global_block) {
-				statements.push_back(parseBlock(p, tokens));
+				has_open_brace = false;
+
+				auto block = parseBlock(p, tokens);
+				if (!block) {
+					return nullptr;
+				}
+
+				statements.push_back(move(block));
 			} else {
 				tokens.eat();
 
@@ -43,8 +50,11 @@ struct ParserHelper {
 
 			shared_ptr<ASTNode> statement = nullptr;
 			token = tokens.get();
+			auto token_text = token.text();
 
-			if (isBuiltin(token.text(), Builtin::OpenBlock)) {
+			if (has_open_brace && isBuiltin(token_text, Builtin::CloseBlock)) {
+				break;
+			} else if (isBuiltin(token_text, Builtin::OpenBlock)) {
 				statement = parseBlock(p, tokens);
 			} else {
 				statement = parseStatement(p, tokens);
@@ -59,16 +69,22 @@ struct ParserHelper {
 			if (tokens.empty()) {
 				break;
 			}
+		}
+
+		if (has_open_brace) {
+			if (tokens.empty()) {
+				p.error(token.meta(), errors::expected_close_block);
+				return nullptr;
+			}
 
 			token = tokens.get();
 			if (isBuiltin(token.text(), Builtin::CloseBlock)) {
 				if (has_open_brace) {
 					tokens.eat();
-					break;
+				} else {
+					p.error(token.meta(), errors::unexpected_token);
+					return nullptr;
 				}
-
-				p.error(token.meta(), errors::unexpected_token);
-				return nullptr;
 			}
 		}
 
