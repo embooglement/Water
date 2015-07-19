@@ -24,7 +24,7 @@ bool TokenStream::empty() const {
 	}
 
 	return all_of(_current, _end, [](const Token& token) {
-		return token.type() != TokenType::Comment;
+		return token.type() == TokenType::Comment;
 	});
 
 	return true;
