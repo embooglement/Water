@@ -94,7 +94,7 @@ public:
 	static const ValueType value_type = ValueType::Function;
 	FunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
 	virtual void output(std::ostream& out) const override;
-	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope> scope, std::vector<std::shared_ptr<Value>> arguments) const;
+	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const;
 	std::string id() const;
 private:
 	std::string _identifier;
@@ -105,7 +105,7 @@ private:
 class PrintFunctionValue : public FunctionValue {
 public:
 	PrintFunctionValue();
-	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope> scope, std::vector<std::shared_ptr<Value>> arguments) const override;
+	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const override;
 };
 
 double toNumber(const std::shared_ptr<Value>& var);

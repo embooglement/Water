@@ -77,7 +77,7 @@ shared_ptr<Scope> Scope::push() {
 	return make_shared<Scope>(shared_from_this());
 }
 
-shared_ptr<Scope> Scope::getGlobalScope() {
+shared_ptr<Scope>& Scope::getGlobalScope() {
 	return global_scope;
 }
 

@@ -29,21 +29,21 @@ const TokenMetaData& ASTNode::meta() const {
 	return _meta;
 }
 
-shared_ptr<Value> ASTNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> ASTNode::evaluate(shared_ptr<Scope>& scope) const {
 	throw EvaluationError("evaluate not implemented");
 }
 
 /* ===== IdentifierNode ===== */
 
-IdentifierNode::IdentifierNode(const TokenMetaData& meta, const string& identifier)
-	: ASTNode(meta), _identifier(identifier) {}
+IdentifierNode::IdentifierNode(const TokenMetaData& meta, string identifier)
+	: ASTNode(meta), _identifier(move(identifier)) {}
 
 void IdentifierNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
 	out << _identifier;
 }
 
-shared_ptr<Value> IdentifierNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> IdentifierNode::evaluate(shared_ptr<Scope>& scope) const {
 	return scope->get(_identifier);
 }
 
@@ -53,29 +53,29 @@ const string& IdentifierNode::str() const {
 
 /* ===== NumberLiteralNode ===== */
 
-NumberLiteralNode::NumberLiteralNode(const TokenMetaData& meta, const string& number)
-	: ASTNode(meta), _number(stod(number)) {}
+NumberLiteralNode::NumberLiteralNode(const TokenMetaData& meta, string number)
+	: ASTNode(meta), _number(stod(move(number))) {}
 
 void NumberLiteralNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
 	out << _number;
 }
 
-shared_ptr<Value> NumberLiteralNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> NumberLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
 	return make_shared<NumberValue>(true, _number);
 }
 
 /* ===== StringLiteralNode ===== */
 
-StringLiteralNode::StringLiteralNode(const TokenMetaData& meta, const string& str)
-	: ASTNode(meta), _str(str) {}
+StringLiteralNode::StringLiteralNode(const TokenMetaData& meta, string str)
+	: ASTNode(meta), _str(move(str)) {}
 
 void StringLiteralNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
 	out << "\"" << _str << "\"";
 }
 
-shared_ptr<Value> StringLiteralNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> StringLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
 	return make_shared<StringValue>(true, _str);
 }
 
@@ -88,14 +88,14 @@ void BooleanLiteralNode::output(ostream& out, int indent) const {
 	out << (_boolean ? "true" : "false");
 }
 
-shared_ptr<Value> BooleanLiteralNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> BooleanLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
 	return make_shared<BooleanValue>(true, _boolean);
 }
 
 /* ===== BinaryOperatorNode ===== */
 
 BinaryOperatorNode::BinaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> left, shared_ptr<ASTNode> right)
-	: ASTNode(meta), _op(op), _left(left), _right(right) {}
+	: ASTNode(meta), _op(op), _left(move(left)), _right(move(right)) {}
 
 void BinaryOperatorNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
@@ -110,7 +110,7 @@ void BinaryOperatorNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 	// Short circuit evaluate logical operators
 	switch (_op) {
 		case Builtin::LogicalAnd:
@@ -172,7 +172,7 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope> scope) const {
 /* ===== UnaryOperatorNode ===== */
 
 UnaryOperatorNode::UnaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> expr)
-	: ASTNode(meta), _op(op), _expr(expr) {}
+	: ASTNode(meta), _op(op), _expr(move(expr)) {}
 
 void UnaryOperatorNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
@@ -185,7 +185,7 @@ void UnaryOperatorNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-shared_ptr<Value> UnaryOperatorNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> UnaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 	auto expr = _expr->evaluate(scope);
 
 	switch (_op) {
@@ -205,7 +205,7 @@ shared_ptr<Value> UnaryOperatorNode::evaluate(shared_ptr<Scope> scope) const {
 /* ===== FunctionCallNode ===== */
 
 FunctionCallNode::FunctionCallNode(const TokenMetaData& meta, shared_ptr<ASTNode> caller, vector<shared_ptr<ASTNode>> arguments)
-	: ASTNode(meta), _caller(caller), _arguments(arguments) {}
+	: ASTNode(meta), _caller(move(caller)), _arguments(move(arguments)) {}
 
 void FunctionCallNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
@@ -223,7 +223,7 @@ void FunctionCallNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-shared_ptr<Value> FunctionCallNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> FunctionCallNode::evaluate(shared_ptr<Scope>& scope) const {
 	auto caller = _caller->evaluate(scope);
 	if (caller->type() != ValueType::Function) {
 		throw TypeError();
@@ -266,7 +266,7 @@ void BlockNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope>& scope) const {
 	shared_ptr<Scope> block_scope;
 
 	if (isNewScope()) {
@@ -292,7 +292,7 @@ shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope> scope) const {
 /* ===== IfStatementNode ===== */
 
 IfStatementNode::IfStatementNode(const TokenMetaData& meta, shared_ptr<ASTNode> condition, shared_ptr<ASTNode> then_statement, shared_ptr<ASTNode> else_statement)
-	: ASTNode(meta), _condition(condition), _then(then_statement), _else(else_statement) {}
+	: ASTNode(meta), _condition(move(condition)), _then(move(then_statement)), _else(move(else_statement)) {}
 
 void IfStatementNode::output(ostream& out, int indent) const {
 	indentOutput(out, indent);
@@ -329,7 +329,7 @@ void IfStatementNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 	auto condition = _condition->evaluate(scope);
 
 	if (!condition) {
@@ -341,11 +341,12 @@ shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope> scope) const {
 		throw EvaluationError("type of condition is not Boolean");
 	}
 
+	auto if_block_scope = scope->push();
 	bool condition_value = static_pointer_cast<BooleanValue>(condition)->valueOf();
 	if (condition_value) {
-		return _then->evaluate(scope->push());
+		return _then->evaluate(if_block_scope);
 	} else if (_else) {
-		return _else->evaluate(scope->push());
+		return _else->evaluate(if_block_scope);
 	}
 
 	return nullptr;
@@ -373,10 +374,9 @@ void DeclarationNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-shared_ptr<Value> DeclarationNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> DeclarationNode::evaluate(shared_ptr<Scope>& scope) const {
 	if (_expr) {
-		auto expr = _expr->evaluate(scope);
-		scope->add(_identifier, expr);
+		scope->add(_identifier, _expr->evaluate(scope));
 	}
 
 	return nullptr;
@@ -418,7 +418,7 @@ void FunctionDeclarationNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-shared_ptr<Value> FunctionDeclarationNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> FunctionDeclarationNode::evaluate(shared_ptr<Scope>& scope) const {
 	return make_shared<FunctionValue>(_identifier, _argument_names, _body);
 }
 
@@ -444,7 +444,7 @@ void ReturnNode::output(ostream& out, int indent) const {
 	out << ")";
 }
 
-shared_ptr<Value> ReturnNode::evaluate(shared_ptr<Scope> scope) const {
+shared_ptr<Value> ReturnNode::evaluate(shared_ptr<Scope>& scope) const {
 	if (_expr) {
 		auto val = _expr->evaluate(scope); // TODO: check for sentinelvalue?
 		if (val) {

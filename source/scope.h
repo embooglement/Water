@@ -15,7 +15,7 @@ public:
 	bool contains(const std::string& identifier) const;
 	std::shared_ptr<Scope> push(); // TODO: rename this to something more appropriate, make const?
 
-	static std::shared_ptr<Scope> getGlobalScope();
+	static std::shared_ptr<Scope>& getGlobalScope();
 	static void addToGlobalScope(std::string identifier, std::shared_ptr<Value> val);
 private:
 	std::unordered_map<std::string, std::shared_ptr<Value>> _vars;

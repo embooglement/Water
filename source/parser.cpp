@@ -38,7 +38,7 @@ struct ParserHelper {
 				break;
 			}
 
-			statements.push_back(statement);
+			statements.push_back(move(statement));
 
 			if (tokens.empty()) {
 				break;

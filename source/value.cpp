@@ -118,7 +118,7 @@ string FunctionValue::id() const {
 	return _identifier;
 }
 
-shared_ptr<Value> FunctionValue::call(shared_ptr<Scope> scope, vector<shared_ptr<Value>> arguments) const {
+shared_ptr<Value> FunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
 	int arguments_passed_size = arguments.size();
 	int arguments_expected_size = _argument_names.size();
 
@@ -142,7 +142,7 @@ shared_ptr<Value> FunctionValue::call(shared_ptr<Scope> scope, vector<shared_ptr
 PrintFunctionValue::PrintFunctionValue()
 	: FunctionValue("print", {}, nullptr) {}
 
-shared_ptr<Value> PrintFunctionValue::call(shared_ptr<Scope> scope, vector<shared_ptr<Value>> arguments) const {
+shared_ptr<Value> PrintFunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
 	for (auto&& argument : arguments) {
 		if (argument) {
 			argument->output(cout);

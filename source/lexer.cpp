@@ -37,7 +37,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 	auto invalid_token = [&](string error) {
 		++error_count;
 		TokenMetaData meta = { filename, line, starting_column };
-		this->error(meta, error);
+		this->error(meta, move(error));
 	};
 
 	auto peek = [&] {
@@ -200,5 +200,5 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 }
 
 void Lexer::error(const TokenMetaData& meta, string error) {
-	printError(meta, error);
+	printError(meta, move(error));
 }

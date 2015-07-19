@@ -8,5 +8,5 @@ void printError(const TokenMetaData& meta, string error) {
 		 << meta.filename << ":"
 		 << meta.line << ":"
 		 << meta.column << ": "
-		 << error << endl;
+		 << move(error) << endl;
 }
