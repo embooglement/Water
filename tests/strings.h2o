@@ -1,0 +1,8 @@
+print("double quoted");
+print('single quoted');
+print("double\tquoted\nwith escapes");
+print('single\tquoted\nwith escapes');
+print("'double quotes'");
+print('"single quotes"');
+print("\"double quotes with escapes\"");
+print('\'single quotes with escapes\'');

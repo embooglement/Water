@@ -128,25 +128,56 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			}
 
 		// String Literals
-		} else if (current_char == '\"') {
+		} else if (current_char == '\"' || current_char == '\'') {
 			string string_literal = "";
-			bool closed = false;
+			bool is_double_quoted = current_char == '\"';
+			bool last_char_is_slash = false;
 
 			while (has_input()) {
 				current_char = eat_char();
-				if (current_char == '\"') {
-					closed = true;
-					push_token(TokenType::StringLiteral, string_literal);
-					break;
-				} else if (current_char == '\n') {
-					break;
+
+				if (current_char == '\\') {
+					last_char_is_slash = true;
+					continue;
 				}
 
-				string_literal += current_char;
-			}
+				if (last_char_is_slash) {
+					switch (current_char) {
+						case '\\':
+							string_literal += '\\';
+							break;
+						case 'n':
+							string_literal += '\n';
+							break;
+						case 't':
+							string_literal += '\t';
+							break;
+						case '\'':
+							string_literal += '\'';
+							break;
+						case '\"':
+							string_literal += '\"';
+							break;
+					}
 
-			if (!closed) {
-				invalid_token("expected closing double quote");
+					last_char_is_slash = false;
+				} else {
+					if (is_double_quoted && current_char == '\"') {
+						push_token(TokenType::StringLiteral, string_literal);
+						break;
+					} else if (!is_double_quoted && current_char == '\'') {
+						push_token(TokenType::StringLiteral, string_literal);
+						break;
+					} else if (current_char == '\n' || !has_input()) {
+						if (is_double_quoted) {
+							invalid_token(errors::expected_close_double_quote);
+						} else {
+							invalid_token(errors::expected_close_single_quote);
+						}
+					}
+
+					string_literal += current_char;
+				}
 			}
 
 		// Comments

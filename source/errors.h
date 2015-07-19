@@ -19,6 +19,8 @@ namespace errors {
 	static const std::string expected_argument_delimiter = "expected comma";
 	static const std::string expected_open_block = "expected opening curly brace";
 	static const std::string expected_close_block = "expected closing curly brace";
+	static const std::string expected_close_double_quote = "expected closing double quote";
+	static const std::string expected_close_single_quote = "expected closing single quote";
 	static const std::string unexpected_token = "unexpected token";
 }
 
