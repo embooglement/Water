@@ -12,10 +12,11 @@ public:
 	bool hasNext() const;
 	bool empty() const;
 	Token get() const;
-	void eat(bool ignore_comments = true);
+	void eat();
 private:
 	TokenIter _current;
 	const TokenIter _end;
+	bool _ignore_comments;
 };
 
 #endif

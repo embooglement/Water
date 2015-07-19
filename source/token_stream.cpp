@@ -1,8 +1,10 @@
 #include "token_stream.h"
 
 TokenStream::TokenStream(TokenIter begin, TokenIter end, bool ignore_comments)
-	: _current(begin), _end(end) {
-		eat(ignore_comments);
+	: _current(begin), _end(end), _ignore_comments(ignore_comments) {
+		if (ignore_comments && _current->type() == TokenType::Comment) {
+			eat();
+		}
 	}
 
 bool TokenStream::hasNext() const {
@@ -17,10 +19,10 @@ Token TokenStream::get() const {
 	return *_current;
 }
 
-void TokenStream::eat(bool ignore_comments) {
+void TokenStream::eat() {
 	++_current;
 
-	if (!ignore_comments) {
+	if (!_ignore_comments) {
 		return;
 	}
 

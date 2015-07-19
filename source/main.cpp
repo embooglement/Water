@@ -100,7 +100,7 @@ int main(int argc, const char** argv) {
 		print_tokens(tokens);
 	}
 
-	TokenStream token_stream {begin(tokens), end(tokens)};
+	TokenStream token_stream {begin(tokens), end(tokens), true};
 	Parser parser;
 	shared_ptr<ASTNode> tree;
 
