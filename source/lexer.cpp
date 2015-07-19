@@ -48,6 +48,10 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 		char c;
 		input >> c;
 
+		if (!input) {
+			return 0;
+		}
+
 		if (c == '\n') {
 			current_column = 0;
 			++line;
@@ -66,13 +70,20 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 
 	char current_char;
 	while (has_input()) {
+		starting_column = current_column;
 		current_char = eat_char();
-		starting_column = current_column - 1;
 
-		if (isspace(current_char)) {
+		// End of file
+		if (current_char == 0) {
+			break;
+
+		// Whitespace
+		} else if (isspace(current_char)) {
 			while (has_input() && isspace(peek())) {
 				eat_char();
 			}
+
+		// Identifiers
 		} else if (isIdentifier(current_char)) {
 			string identifier = to_string(current_char);
 			while (has_input() && isIdentifier(peek(), true)) {
@@ -87,6 +98,8 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			}
 
 			push_token(type, identifier);
+
+		// Number literals
 		} else if (isdigit(current_char)) {
 			string number_literal = to_string(current_char);
 			bool missing_fractional_part = false;
@@ -113,6 +126,8 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			} else {
 				push_token(TokenType::NumberLiteral, number_literal);
 			}
+
+		// String Literals
 		} else if (current_char == '\"') {
 			string string_literal = "";
 			bool closed = false;
@@ -133,6 +148,8 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 			if (!closed) {
 				invalid_token("expected closing double quote");
 			}
+
+		// Comments
 		} else if (current_char == '#') {
 			string comment = "#";
 
@@ -143,22 +160,26 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 
 			while (has_input()) {
 				current_char = eat_char();
+
 				if (is_block_comment) {
+					bool last_char_was_hyphen = comment.back() == '-';
 					comment += current_char;
 
-					if ((current_char == '#' && comment.back() == '-') || !has_input()) {
-						push_token(TokenType::Comment, comment);
+					if ((last_char_was_hyphen && current_char == '#') || !has_input()) {
+						push_token(TokenType::Comment, "BLOCK COMMENT " + comment);
 						break;
 					}
 				} else {
 					if (current_char == '\n' || !has_input()) {
-						push_token(TokenType::Comment, comment);
+						push_token(TokenType::Comment, "LINE COMMENT " + comment);
 						break;
 					}
 
 					comment += current_char;
 				}
 			}
+
+		// Operators
 		} else if (isSymbol(current_char)) {
 			string op = to_string(current_char);
 			bool operator_was_matched = isBuiltin(op);
@@ -184,6 +205,8 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 					break;
 				}
 			}
+
+		// Invalid text
 		} else {
 			string invalid_text = to_string(current_char);
 

@@ -1,4 +1,7 @@
 #include "token_stream.h"
+#include <algorithm>
+
+using namespace std;
 
 TokenStream::TokenStream(TokenIter begin, TokenIter end, bool ignore_comments)
 	: _current(begin), _end(end), _ignore_comments(ignore_comments) {
@@ -12,7 +15,19 @@ bool TokenStream::hasNext() const {
 }
 
 bool TokenStream::empty() const {
-	return _current == _end;
+	if (_current == _end) {
+		return true;
+	}
+
+	if (!_ignore_comments) {
+		return false;
+	}
+
+	return all_of(_current, _end, [](const Token& token) {
+		return token.type() != TokenType::Comment;
+	});
+
+	return true;
 }
 
 Token TokenStream::get() const {

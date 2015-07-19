@@ -96,6 +96,10 @@ int main(int argc, const char** argv) {
 		return -1;
 	}
 
+	if (tokens.empty()) {
+		return 0;
+	}
+
 	if (paramIsSet(params, "print-tokens")) {
 		print_tokens(tokens);
 	}
