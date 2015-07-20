@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "astnode.h"
+#include "global_scope.h"
 
 using namespace std;
 

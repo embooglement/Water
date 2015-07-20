@@ -125,6 +125,4 @@ double toNumber(const std::shared_ptr<Value>& var);
 std::string toString(const std::shared_ptr<Value>& var);
 bool toBoolean(const std::shared_ptr<Value>& var);
 
-void setupGlobalScope();
-
 #endif
