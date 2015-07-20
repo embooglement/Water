@@ -34,10 +34,14 @@ bool Value::isConst() const {
 
 /* ===== NullValue ===== */
 
-// TODO: should only really ever be one shared_ptr<NullValue>
+const std::shared_ptr<NullValue> NullValue::_null_value;
 
 NullValue::NullValue()
 	: Value(value_type, true) {}
+
+const shared_ptr<NullValue>& NullValue::get() {
+	return _null_value;
+}
 
 void NullValue::output(ostream& out) const {
 	out << "(null)";
@@ -131,7 +135,7 @@ shared_ptr<Value> FunctionValue::call(shared_ptr<Scope>& scope, const vector<sha
 		argument_scope->overshadow(_argument_names[i], arguments[i]);
 	}
 
-	argument_scope->overshadow(return_value_alias, make_shared<NullValue>());
+	argument_scope->overshadow(return_value_alias, NullValue::get());
 	_body->evaluate(argument_scope);
 
 	return argument_scope->get(return_value_alias);

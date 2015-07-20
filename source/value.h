@@ -44,9 +44,12 @@ private:
 };
 
 class NullValue : public Value {
+private:
+	static const std::shared_ptr<NullValue> _null_value;
+	NullValue();
 public:
 	static const ValueType value_type = ValueType::Null;
-	NullValue();
+	static const std::shared_ptr<NullValue>& get();
 	virtual void output(std::ostream& out) const override;
 	std::nullptr_t valueOf() const;
 };
