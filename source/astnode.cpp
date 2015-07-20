@@ -5,14 +5,6 @@
 
 using namespace std;
 
-/* ===== Exceptions ===== */
-
-class EvaluationError : public runtime_error {
-public:
-	EvaluationError(const string& error_message)
-		: runtime_error(error_message) {}
-};
-
 /* ===== ASTNode ===== */
 
 ASTNode::ASTNode(const TokenMetaData& meta)
@@ -23,7 +15,7 @@ const TokenMetaData& ASTNode::meta() const {
 }
 
 shared_ptr<Value> ASTNode::evaluate(shared_ptr<Scope>& scope) const {
-	throw EvaluationError("evaluate not implemented");
+	throw InterpretorError("evaluate not implemented");
 }
 
 /* ===== IdentifierNode ===== */
@@ -150,7 +142,7 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 			return make_shared<BooleanValue>(true, toNumber(lhs) != toNumber(rhs));
 
 		default:
-			throw EvaluationError("operator not implemented");
+			throw InterpretorError("operator not implemented");
 	}
 
 	return nullptr;
@@ -183,7 +175,7 @@ shared_ptr<Value> UnaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 			return make_shared<BooleanValue>(true, !toBoolean(expr));
 
 		default:
-			throw EvaluationError("operator not implemented");
+			throw InterpretorError("operator not implemented");
 	}
 }
 
@@ -208,7 +200,7 @@ void FunctionCallNode::output(ostream& out, int indent) const {
 shared_ptr<Value> FunctionCallNode::evaluate(shared_ptr<Scope>& scope) const {
 	auto caller = _caller->evaluate(scope);
 	if (caller->type() != ValueType::Function) {
-		throw TypeError();
+		throw TypeError("Expression is not of type Function");
 	}
 
 	auto func = static_pointer_cast<FunctionValue>(caller);
@@ -304,14 +296,12 @@ void IfStatementNode::output(ostream& out, int indent) const {
 
 shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 	auto condition = _condition->evaluate(scope);
-
 	if (!condition) {
-		// TODO: throw InterpretorError here or something
-		cout << "condition is null" << endl;
+		throw InterpretorError("condition is null");
 	}
 
 	if (condition->type() != ValueType::Boolean) {
-		throw EvaluationError("type of condition is not Boolean");
+		throw TypeError("Condition is not of type Boolean");
 	}
 
 	auto if_block_scope = scope->createNestedScope();

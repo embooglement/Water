@@ -170,7 +170,15 @@ void addFunctionToGlobalScope(const string& identifier, Func&& func) {
 
 template <typename Func>
 void addUnaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
-	addFunctionToGlobalScope(identifier, [&func](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope(identifier, [&func, identifier](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		 if (arguments.size() != 1) {
+			 throw InvalidArgumentsCountError(identifier, 1, arguments.size());
+		 }
+
+		 if (arguments[0]->type() != ValueType::Number) {
+			 throw TypeError("Argument is not of type Number");
+		 }
+
 		 auto number = toNumber(arguments[0]);
 		 return make_shared<NumberValue>(true, func(number));
 	});
@@ -178,7 +186,19 @@ void addUnaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 
 template <typename Func>
 void addBinaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
-	addFunctionToGlobalScope(identifier, [&func](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope(identifier, [&func, identifier](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		 if (arguments.size() != 2) {
+			 throw InvalidArgumentsCountError(identifier, 2, arguments.size());
+		 }
+
+		 if (arguments[0]->type() != ValueType::Number) {
+			 throw TypeError("First argument is not of type Number");
+		 }
+
+		 if (arguments[1]->type() != ValueType::Number) {
+			 throw TypeError("Second argument is not of type Number");
+		 }
+
 		 auto number1 = toNumber(arguments[0]);
 		 auto number2 = toNumber(arguments[1]);
 		 return make_shared<NumberValue>(true, func(number1, number2));
@@ -196,7 +216,7 @@ void setupGlobalScope() {
 
 		auto&& argument = arguments[0];
 		if (argument->type() != ValueType::String) {
-			throw TypeError();
+			throw TypeError("Argument is not of type String");
 		}
 
 		auto variable_name = toString(argument);
@@ -300,13 +320,12 @@ void setupGlobalScope() {
 			throw InvalidArgumentsCountError("bind", 1, 0);
 		}
 
-		const auto& arg0 = arguments[0];
-		if (arg0->type() != ValueType::Function) {
-			throw TypeError();
+		if (arguments[0]->type() != ValueType::Function) {
+			throw TypeError("First argument is not of type Function");
 		}
 
 		if (arguments.size() < 2) {
-			return arg0;
+			return arguments[0];
 		}
 
 		ostringstream name_stream;
@@ -334,6 +353,7 @@ void setupGlobalScope() {
 		ostringstream name_stream;
 		name_stream << "constant_";
 		constant_value->output(name_stream);
+
 		return make_shared<BuiltinFunctionValue>(name_stream.str(), [constant_value](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 			return constant_value;
 		});
@@ -350,7 +370,7 @@ void setupGlobalScope() {
 
 		for (auto&& argument : arguments) {
 			if (argument->type() != ValueType::Function) {
-				throw TypeError();
+				throw TypeError("Argument is not of type Function");
 			}
 
 			auto func = static_pointer_cast<FunctionValue>(argument);

@@ -8,8 +8,8 @@
 
 class TypeError : public std::runtime_error {
 public:
-	TypeError()
-		: std::runtime_error("Invalid type conversion") {}
+	TypeError(const std::string& error_message = "Invalid type conversion")
+		: std::runtime_error(error_message) {}
 };
 
 class DeclarationError : public std::runtime_error {
@@ -28,6 +28,12 @@ class InvalidArgumentsCountError : public std::runtime_error {
 public:
 	InvalidArgumentsCountError(const std::string& identifier, int expected, int passed)
 		: std::runtime_error("Incorrect number of arguments passed to " + identifier + ": expected " + std::to_string(expected) + " but recieved " + std::to_string(passed)) {}
+};
+
+class InterpretorError : public std::runtime_error {
+public:
+	InterpretorError(const std::string& error_message)
+		: std::runtime_error(error_message) {}
 };
 
 #endif
