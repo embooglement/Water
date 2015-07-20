@@ -124,7 +124,6 @@ const string& FunctionValue::id() const {
 UserDefinedFunctionValue::UserDefinedFunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body)
 	: FunctionValue(move(identifier)), _argument_names(move(argument_names)), _body(move(body)) {
 	if (_identifier.empty()) {
-		// TODO: print as hex value with proper formatting
 		_identifier = (ostringstream() << (void*)_body.get()).str();
 	}
 }
