@@ -187,6 +187,23 @@ void addBinaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 }
 
 void setupGlobalScope() {
+
+	/* ===== Meta ===== */
+
+	addFunctionToGlobalScope("is_defined", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		if (arguments.size() != 1) {
+			throw InvalidArgumentsCountError("is_defined", 1, arguments.size());
+		}
+
+		auto&& argument = arguments[0];
+		if (argument->type() != ValueType::String) {
+			throw TypeError();
+		}
+
+		auto variable_name = toString(argument);
+		return make_shared<BooleanValue>(true, scope->contains(variable_name));
+	});
+
 	/* ===== IO ===== */
 
 	addFunctionToGlobalScope("print", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
@@ -232,6 +249,8 @@ void setupGlobalScope() {
 	/* ===== Math ===== */
 
 	// (note: these are using the long double versions of functions to avoid needing to cast)
+
+	// constants
 	Scope::addToGlobalScope("PI", make_shared<NumberValue>(true, M_PI));
 	Scope::addToGlobalScope("E", make_shared<NumberValue>(true, M_E));
 
@@ -275,7 +294,6 @@ void setupGlobalScope() {
 	addUnaryMathFunctionToGlobalScope("acosh", acoshl);
 	addUnaryMathFunctionToGlobalScope("atanh", atanhl);
 
-
 	/* ===== Functional ===== */
 
 	addFunctionToGlobalScope("bind", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
@@ -292,12 +310,77 @@ void setupGlobalScope() {
 			return arg0;
 		}
 
+		ostringstream name_stream;
+		name_stream << "bind_";
+
+		for (auto&& argument : arguments) {
+			argument->output(name_stream);
+			name_stream << "_";
+		}
+
 		auto func = static_pointer_cast<FunctionValue>(arguments[0]);
-		// TODO: this needs a better name
-		return make_shared<BuiltinFunctionValue>(func->id() + "_bind", [arguments, func](ScopePtr& scope, const Arguments& following_arguments) -> ValuePtr {
+		return make_shared<BuiltinFunctionValue>(name_stream.str(), [arguments, func](ScopePtr& scope, const Arguments& following_arguments) -> ValuePtr {
 			Arguments new_arguments (next(begin(arguments)), end(arguments));
 			new_arguments.insert(end(new_arguments), begin(following_arguments), end(following_arguments));
 			return func->call(scope, new_arguments);
 		});
+	});
+
+	addFunctionToGlobalScope("constant", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		if (arguments.empty()) {
+			throw InvalidArgumentsCountError("constant", 1, 0);
+		}
+
+		const auto& constant_value = arguments[0];
+		ostringstream name_stream;
+		name_stream << "constant_";
+		constant_value->output(name_stream);
+		return make_shared<BuiltinFunctionValue>(name_stream.str(), [constant_value](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+			return constant_value;
+		});
+	});
+
+	addFunctionToGlobalScope("compose", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		if (arguments.empty()) {
+			throw InvalidArgumentsCountError("compose", 1, 0);
+		}
+
+		vector<shared_ptr<FunctionValue>> functions;
+		ostringstream name_stream;
+		name_stream << "compose_";
+
+		for (auto&& argument : arguments) {
+			if (argument->type() != ValueType::Function) {
+				throw TypeError();
+			}
+
+			auto func = static_pointer_cast<FunctionValue>(argument);
+			func->output(name_stream);
+			name_stream << "_";
+
+			functions.push_back(move(func));
+		}
+
+		return make_shared<BuiltinFunctionValue>(name_stream.str(), [functions](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+			vector<shared_ptr<Value>> new_arguments = arguments;
+			shared_ptr<Value> returned_value = NullValue::get();
+
+			auto end_it = functions.rend();
+			for (auto it = functions.rbegin(); it != end_it; ++it) {
+				auto&& func = *it;
+				returned_value = func->call(scope, new_arguments);
+				new_arguments.assign({returned_value});
+			}
+
+			return returned_value;
+		});
+	});
+
+	addFunctionToGlobalScope("id", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		if (arguments.size() != 1) {
+			throw InvalidArgumentsCountError("id", 1, arguments.size());
+		}
+
+		return arguments[0];
 	});
 }

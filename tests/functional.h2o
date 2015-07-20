@@ -1,6 +1,40 @@
-let f = func(x, y, z) {
-	print(x, y, z);
+let test_bind = func() {
+	let f = func(x, y, z) {
+		println(x, y, z);
+	};
+
+	let g = bind(f, 1, 2);
+	g(3);
 };
 
-let g = bind(f, 1, 2);
-g(3);
+let test_constant = func() {
+	let f = constant("hello world");
+	println(f(1, 2, 3));
+};
+
+let test_compose = func() {
+	let f1 = func(x) { 
+		return x + 1;
+	};
+
+	let f2 = func(x) {
+		return x - 1;
+	};
+
+	let f3 = func(x) {
+		return x * 2;
+	};
+
+	let g = compose(f1, f2, f3);
+	println(g(3));
+};
+
+let test_id = func() {
+	let x = 2;
+	println(id(x));
+};
+
+test_bind();
+test_constant();
+test_compose();
+test_id();
