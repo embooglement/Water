@@ -34,6 +34,6 @@ const TokenMetaData& Token::meta() const {
 	return _meta;
 }
 
-const std::string& Token::text() const {
+const string& Token::text() const {
 	return _text;
 }

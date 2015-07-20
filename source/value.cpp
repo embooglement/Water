@@ -8,15 +8,15 @@ using namespace std;
 
 /* ===== Conversions ===== */
 
-double toNumber(const std::shared_ptr<Value>& var) {
+double toNumber(const shared_ptr<Value>& var) {
 	return var->valueAs<NumberValue>();
 }
 
-std::string toString(const std::shared_ptr<Value>& var) {
+string toString(const shared_ptr<Value>& var) {
 	return var->valueAs<StringValue>();
 }
 
-bool toBoolean(const std::shared_ptr<Value>& var) {
+bool toBoolean(const shared_ptr<Value>& var) {
 	return var->valueAs<BooleanValue>();
 }
 
@@ -35,7 +35,7 @@ bool Value::isConst() const {
 
 /* ===== NullValue ===== */
 
-const std::shared_ptr<NullValue> NullValue::_null_value;
+const shared_ptr<NullValue> NullValue::_null_value;
 
 NullValue::NullValue()
 	: Value(value_type, true) {}
@@ -70,7 +70,7 @@ bool SentinelValue::isReturn() const {
 NumberValue::NumberValue(bool is_const, double number)
 	: Value(value_type, is_const), _number(number) {}
 
-void NumberValue::output(std::ostream& out) const {
+void NumberValue::output(ostream& out) const {
 	out << valueOf();
 }
 
@@ -83,7 +83,7 @@ double NumberValue::valueOf() const {
 StringValue::StringValue(bool is_const, string str)
 	: Value(value_type, is_const), _str(move(str)) {}
 
-void StringValue::output(std::ostream& out) const {
+void StringValue::output(ostream& out) const {
 	out << valueOf();
 }
 
@@ -119,7 +119,7 @@ const string& FunctionValue::id() const {
 
 /* ===== UserDefinedFunctionValue ===== */
 
-UserDefinedFunctionValue::UserDefinedFunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body)
+UserDefinedFunctionValue::UserDefinedFunctionValue(string identifier, vector<string> argument_names, shared_ptr<ASTNode> body)
 	: FunctionValue(move(identifier)), _argument_names(move(argument_names)), _body(move(body)) {
 	if (_identifier.empty()) {
 		_identifier = (ostringstream() << (void*)_body.get()).str();
