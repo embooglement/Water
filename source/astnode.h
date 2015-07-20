@@ -10,8 +10,6 @@
 #include "value.h"
 #include "scope.h"
 
-void indentOutput(std::ostream& out, int indent);
-
 class ASTNode {
 public:
 	ASTNode(const TokenMetaData& meta);
