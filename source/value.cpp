@@ -1,5 +1,6 @@
 #include <sstream>
 #include <functional>
+#include <cmath>
 
 #include "value.h"
 #include "scope.h"
@@ -158,16 +159,35 @@ shared_ptr<Value> BuiltinFunctionValue::call(shared_ptr<Scope>& scope, const vec
 
 /* ==== GlobalVars ====*/
 
+typedef shared_ptr<Value> ValuePtr;
+typedef shared_ptr<Scope> ScopePtr;
+typedef vector<shared_ptr<Value>> Arguments;
+
 template <typename Func>
 void addFunctionToGlobalScope(const string& identifier, Func&& func) {
 	auto func_value = make_shared<BuiltinFunctionValue>(identifier, BuiltinFunctionValue::_FuncType(forward<Func>(func)));
 	Scope::addToGlobalScope(identifier, move(func_value));
 }
 
+template <typename Func>
+void addUnaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
+	addFunctionToGlobalScope(identifier, [&func](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		 auto number = toNumber(arguments[0]);
+		 return make_shared<NumberValue>(true, func(number));
+	});
+}
+
+template <typename Func>
+void addBinaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
+	addFunctionToGlobalScope(identifier, [&func](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		 auto number1 = toNumber(arguments[0]);
+		 auto number2 = toNumber(arguments[1]);
+		 return make_shared<NumberValue>(true, func(number1, number2));
+	});
+}
+
 void setupGlobalScope() {
-	typedef shared_ptr<Value> ValuePtr;
-	typedef shared_ptr<Scope> ScopePtr;
-	typedef vector<shared_ptr<Value>> Arguments;
+	/* ===== IO ===== */
 
 	addFunctionToGlobalScope("print", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 		auto arguments_count = arguments.size();
@@ -207,5 +227,77 @@ void setupGlobalScope() {
 		string str;
 		getline(cin, str);
 		return make_shared<StringValue>(true, move(str));
+	});
+
+	/* ===== Math ===== */
+
+	// (note: these are using the long double versions of functions to avoid needing to cast)
+	Scope::addToGlobalScope("PI", make_shared<NumberValue>(true, M_PI));
+	Scope::addToGlobalScope("E", make_shared<NumberValue>(true, M_E));
+
+	// general
+	addUnaryMathFunctionToGlobalScope("abs", fabsl);
+	addUnaryMathFunctionToGlobalScope("sqrt", sqrtl);
+	addUnaryMathFunctionToGlobalScope("cbrt", cbrtl);
+	addUnaryMathFunctionToGlobalScope("floor", floorl);
+	addUnaryMathFunctionToGlobalScope("ceil", ceill);
+	addUnaryMathFunctionToGlobalScope("gamma", tgammal);
+	addBinaryMathFunctionToGlobalScope("max", fmaxl);
+	addBinaryMathFunctionToGlobalScope("min", fminl);
+	addUnaryMathFunctionToGlobalScope("sign", [](double x) {
+		return x == 0.0 ? 0.0 : (x < 0.0 ? -1.0 : 1.0);
+	});
+	addUnaryMathFunctionToGlobalScope("factorial", [](double x) {
+		return tgammal(x + 1.0);
+	});
+
+	// expontentials
+	addUnaryMathFunctionToGlobalScope("exp", expl);
+	addUnaryMathFunctionToGlobalScope("exp2", exp2l);
+	addUnaryMathFunctionToGlobalScope("log", logl);
+	addUnaryMathFunctionToGlobalScope("log10", log10l);
+	addUnaryMathFunctionToGlobalScope("log2", log2l);
+
+	// trig
+	addUnaryMathFunctionToGlobalScope("sin", sinl);
+	addUnaryMathFunctionToGlobalScope("cos", cosl);
+	addUnaryMathFunctionToGlobalScope("tan", tanl);
+	addUnaryMathFunctionToGlobalScope("asin", asinl);
+	addUnaryMathFunctionToGlobalScope("acos", acosl);
+	addUnaryMathFunctionToGlobalScope("atan", atanl);
+	addBinaryMathFunctionToGlobalScope("atan2", atan2l);
+
+	// hyperbolic trig
+	addUnaryMathFunctionToGlobalScope("sinh", sinhl);
+	addUnaryMathFunctionToGlobalScope("cosh", coshl);
+	addUnaryMathFunctionToGlobalScope("tanh", tanhl);
+	addUnaryMathFunctionToGlobalScope("asinh", asinhl);
+	addUnaryMathFunctionToGlobalScope("acosh", acoshl);
+	addUnaryMathFunctionToGlobalScope("atanh", atanhl);
+
+
+	/* ===== Functional ===== */
+
+	addFunctionToGlobalScope("bind", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		if (arguments.empty()) {
+			throw InvalidArgumentsCountError("bind", 1, 0);
+		}
+
+		const auto& arg0 = arguments[0];
+		if (arg0->type() != ValueType::Function) {
+			throw TypeError();
+		}
+
+		if (arguments.size() < 2) {
+			return arg0;
+		}
+
+		auto func = static_pointer_cast<FunctionValue>(arguments[0]);
+		// TODO: this needs a better name
+		return make_shared<BuiltinFunctionValue>(func->id() + "_bind", [arguments, func](ScopePtr& scope, const Arguments& following_arguments) -> ValuePtr {
+			Arguments new_arguments (next(begin(arguments)), end(arguments));
+			new_arguments.insert(end(new_arguments), begin(following_arguments), end(following_arguments));
+			return func->call(scope, new_arguments);
+		});
 	});
 }

@@ -1,0 +1,6 @@
+println(sin(PI / 2), cos(PI));
+println(asin(0), acos(1));
+println(floor(3.5), ceil(3.5));
+println(sign(-0.5), sign(0), sign(3));
+println(log(E), E ^ log(1), log(exp(1)));
+println(factorial(4));

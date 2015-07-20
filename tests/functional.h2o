@@ -1,0 +1,6 @@
+let f = func(x, y, z) {
+	print(x, y, z);
+};
+
+let g = bind(f, 1, 2);
+g(3);
