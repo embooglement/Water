@@ -177,12 +177,22 @@ void setupGlobalScope() {
 
 			if (argument) {
 				argument->output(cout);
-				cout << " ";
 			} else {
-				cout << "(undefined) ";
+				cout << "(undefined)";
+			}
+
+			if (i + 1 < arguments_count) {
+				cout << " ";
 			}
 		}
 
+		cout << flush;
+		return nullptr;
+	});
+
+	addFunctionToGlobalScope("println", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		auto print = static_pointer_cast<FunctionValue>(scope->get("print"));
+		print->call(scope, arguments);
 		cout << endl;
 		return nullptr;
 	});

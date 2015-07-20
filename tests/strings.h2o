@@ -1,8 +1,8 @@
-print("double quoted");
-print('single quoted');
-print("double\tquoted\nwith escapes");
-print('single\tquoted\nwith escapes');
-print("'double quotes'");
-print('"single quotes"');
-print("\"double quotes with escapes\"");
-print('\'single quotes with escapes\'');
+println("double quoted");
+println('single quoted');
+println("double\tquoted\nwith escapes");
+println('single\tquoted\nwith escapes');
+println("'double quotes'");
+println('"single quotes"');
+println("\"double quotes with escapes\"");
+println('\'single quotes with escapes\'');

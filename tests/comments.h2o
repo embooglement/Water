@@ -1,4 +1,4 @@
-print(1);
+println(1);
 # I'm a comment
 #! I'm also a comment!
 #-

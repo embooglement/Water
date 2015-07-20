@@ -1,14 +1,14 @@
 {
 	let x = 1;
-	print(x);
+	println(x);
 }
 
 let x = 2;
-print(x);
+println(x);
 
 {
 	let y = 3;
-	print(y);
+	println(y);
 }
 
 let y = 4;

@@ -1,11 +1,11 @@
-double quoted 
-single quoted 
+double quoted
+single quoted
 double	quoted
-with escapes 
+with escapes
 single	quoted
-with escapes 
-'double quotes' 
-"single quotes" 
-"double quotes with escapes" 
-'single quotes with escapes' 
+with escapes
+'double quotes'
+"single quotes"
+"double quotes with escapes"
+'single quotes with escapes'
 
