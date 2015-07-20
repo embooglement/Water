@@ -386,7 +386,7 @@ void FunctionDeclarationNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> FunctionDeclarationNode::evaluate(shared_ptr<Scope>& scope) const {
-	return make_shared<FunctionValue>(_identifier, _argument_names, _body);
+	return make_shared<UserDefinedFunctionValue>(_identifier, _argument_names, _body);
 }
 
 /* ===== ReturnNode ===== */

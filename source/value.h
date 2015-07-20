@@ -95,20 +95,30 @@ private:
 class FunctionValue : public Value {
 public:
 	static const ValueType value_type = ValueType::Function;
-	FunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
+	FunctionValue(std::string identifier);
 	virtual void output(std::ostream& out) const override;
-	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const;
-	std::string id() const;
-private:
+	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const = 0;
+	const std::string& id() const;
+protected:
 	std::string _identifier;
+};
+
+class UserDefinedFunctionValue : public FunctionValue {
+public:
+	UserDefinedFunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
+	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const;
+private:
 	std::vector<std::string> _argument_names;
 	std::shared_ptr<ASTNode> _body;
 };
 
-class PrintFunctionValue : public FunctionValue {
+class BuiltinFunctionValue : public FunctionValue {
 public:
-	PrintFunctionValue();
+	typedef std::function<std::shared_ptr<Value>(std::shared_ptr<Scope>&, const std::vector<std::shared_ptr<Value>>&)> _FuncType;
+	BuiltinFunctionValue(std::string identifier, const _FuncType& func);
 	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const override;
+private:
+	const _FuncType _func;
 };
 
 double toNumber(const std::shared_ptr<Value>& var);

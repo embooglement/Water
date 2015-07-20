@@ -1,4 +1,6 @@
 #include <sstream>
+#include <functional>
+
 #include "value.h"
 #include "scope.h"
 #include "astnode.h"
@@ -105,24 +107,28 @@ bool BooleanValue::valueOf() const {
 
 /* ===== FunctionValue ===== */
 
-FunctionValue::FunctionValue(string identifier, vector<string> argument_names, shared_ptr<ASTNode> body)
-	: Value(value_type, true), _identifier(move(identifier)), _argument_names(move(argument_names)), _body(move(body)) {
+FunctionValue::FunctionValue(string identifier)
+	: Value(value_type, true), _identifier(move(identifier)) {}
 
+void FunctionValue::output(ostream& out) const {
+	out << _identifier;
+}
+
+const string& FunctionValue::id() const {
+	return _identifier;
+}
+
+/* ===== UserDefinedFunctionValue ===== */
+
+UserDefinedFunctionValue::UserDefinedFunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body)
+	: FunctionValue(move(identifier)), _argument_names(move(argument_names)), _body(move(body)) {
 	if (_identifier.empty()) {
 		// TODO: print as hex value with proper formatting
 		_identifier = (ostringstream() << (void*)_body.get()).str();
 	}
 }
 
-void FunctionValue::output(ostream& out) const {
-	out << _identifier;
-}
-
-string FunctionValue::id() const {
-	return _identifier;
-}
-
-shared_ptr<Value> FunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
+shared_ptr<Value> UserDefinedFunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
 	int arguments_passed_size = arguments.size();
 	int arguments_expected_size = _argument_names.size();
 
@@ -141,27 +147,43 @@ shared_ptr<Value> FunctionValue::call(shared_ptr<Scope>& scope, const vector<sha
 	return argument_scope->get(return_value_alias);
 }
 
-/* ===== PrintFunctionValue ===== */
+/* ===== BuiltinFunctionValue ===== */
 
-PrintFunctionValue::PrintFunctionValue()
-	: FunctionValue("print", {}, nullptr) {}
+BuiltinFunctionValue::BuiltinFunctionValue(string identifier, const BuiltinFunctionValue::_FuncType& func)
+	: FunctionValue(move(identifier)), _func(move(func)) {}
 
-shared_ptr<Value> PrintFunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
-	for (auto&& argument : arguments) {
-		if (argument) {
-			argument->output(cout);
-			cout << " ";
-		} else {
-			cout << "(undefined) ";
-		}
-	}
-
-	cout << endl;
-	return nullptr;
+shared_ptr<Value> BuiltinFunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
+	return _func(scope, arguments);
 }
 
 /* ==== GlobalVars ====*/
 
+template <typename Func>
+void addFunctionToGlobalScope(const string& identifier, Func&& func) {
+	auto func_value = make_shared<BuiltinFunctionValue>(identifier, BuiltinFunctionValue::_FuncType(forward<Func>(func)));
+	Scope::addToGlobalScope(identifier, move(func_value));
+}
+
 void setupGlobalScope() {
-	Scope::addToGlobalScope("print", make_shared<PrintFunctionValue>());
+	typedef shared_ptr<Value> ValuePtr;
+	typedef shared_ptr<Scope> ScopePtr;
+	typedef vector<shared_ptr<Value>> Arguments;
+
+	addFunctionToGlobalScope("print", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		auto arguments_count = arguments.size();
+
+		for (Arguments::size_type i = 0; i < arguments_count; ++i) {
+			auto&& argument = arguments[i];
+
+			if (argument) {
+				argument->output(cout);
+				cout << " ";
+			} else {
+				cout << "(undefined) ";
+			}
+		}
+
+		cout << endl;
+		return nullptr;
+	});
 }
