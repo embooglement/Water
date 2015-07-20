@@ -13,7 +13,7 @@ public:
 	void update(const std::string& identifier, std::shared_ptr<Value> val);
 	std::shared_ptr<Value> get(const std::string& identifier) const;
 	bool contains(const std::string& identifier) const;
-	std::shared_ptr<Scope> push(); // TODO: rename this to something more appropriate, make const?
+	std::shared_ptr<Scope> createNestedScope();
 
 	static std::shared_ptr<Scope>& getGlobalScope();
 	static void addToGlobalScope(std::string identifier, std::shared_ptr<Value> val);

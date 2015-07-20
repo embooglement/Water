@@ -73,7 +73,7 @@ bool Scope::contains(const string& identifier) const {
 	return false;
 }
 
-shared_ptr<Scope> Scope::push() {
+shared_ptr<Scope> Scope::createNestedScope() {
 	return make_shared<Scope>(shared_from_this());
 }
 

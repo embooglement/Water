@@ -137,7 +137,7 @@ shared_ptr<Value> UserDefinedFunctionValue::call(shared_ptr<Scope>& scope, const
 		throw InvalidArgumentsCountError(id(), _argument_names.size(), arguments.size());
 	}
 
-	auto argument_scope = scope->push();
+	auto argument_scope = scope->createNestedScope();
 	for (int i = 0; i < arguments_passed_size; ++i) {
 		argument_scope->overshadow(_argument_names[i], arguments[i]);
 	}

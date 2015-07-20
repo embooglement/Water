@@ -251,7 +251,7 @@ shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope>& scope) const {
 	shared_ptr<Scope> block_scope;
 
 	if (isNewScope()) {
-		block_scope = scope->push();
+		block_scope = scope->createNestedScope();
 	} else {
 		block_scope = scope;
 	}
@@ -314,7 +314,7 @@ shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 		throw EvaluationError("type of condition is not Boolean");
 	}
 
-	auto if_block_scope = scope->push();
+	auto if_block_scope = scope->createNestedScope();
 	bool condition_value = static_pointer_cast<BooleanValue>(condition)->valueOf();
 	if (condition_value) {
 		return _then->evaluate(if_block_scope);
