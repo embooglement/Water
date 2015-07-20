@@ -196,4 +196,10 @@ void setupGlobalScope() {
 		cout << endl;
 		return nullptr;
 	});
+
+	addFunctionToGlobalScope("readln", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		string str;
+		getline(cin, str);
+		return make_shared<StringValue>(true, move(str));
+	});
 }

@@ -1,9 +1,16 @@
 #!/bin/bash
 for file in tests/*.h2o
 do
-	./water "$file" > "$file".txt
+	if [ -a "$file".input ]; then
+		./water "$file" < "$file".input > "$file".txt
+	else 
+		./water "$file" > "$file".txt
+	fi
+
 	diff --brief --strip-trailing-cr "$file".txt "$file".expected
 	rm "$file".txt
 done
 
-# TODO: test -r
+./water -r "println(1); println(2);" > tests/_evaluate.txt
+echo -e "1\n2\n" | diff --brief --strip-trailing-cr tests/_evaluate.txt -
+rm tests/_evaluate.txt

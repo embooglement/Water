@@ -1,0 +1,3 @@
+print("Type in your name: ");
+let x = readln();
+print("\nYour name is:", x);
