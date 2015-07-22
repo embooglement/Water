@@ -22,15 +22,11 @@ bool toBoolean(const shared_ptr<Value>& var) {
 
 /* ===== Value ===== */
 
-Value::Value(ValueType type, bool is_const)
-	: _type(type), _is_const(is_const) {}
+Value::Value(ValueType type)
+	: _type(type) {}
 
 ValueType Value::type() const {
 	return _type;
-}
-
-bool Value::isConst() const {
-	return _is_const;
 }
 
 /* ===== NullValue ===== */
@@ -38,7 +34,7 @@ bool Value::isConst() const {
 const shared_ptr<NullValue> NullValue::_null_value;
 
 NullValue::NullValue()
-	: Value(value_type, true) {}
+	: Value(value_type) {}
 
 const shared_ptr<NullValue>& NullValue::get() {
 	return _null_value;
@@ -55,7 +51,7 @@ nullptr_t NullValue::valueOf() const {
 /* ===== SentinelValue ===== */
 
 SentinelValue::SentinelValue()
-	: Value(value_type, true) {}
+	: Value(value_type) {}
 
 void SentinelValue::output(ostream& out) const {
 	out << "(sentinel)";
@@ -67,8 +63,8 @@ bool SentinelValue::isReturn() const {
 
 /* ===== NumberValue ===== */
 
-NumberValue::NumberValue(bool is_const, double number)
-	: Value(value_type, is_const), _number(number) {}
+NumberValue::NumberValue(double number)
+	: Value(value_type), _number(number) {}
 
 void NumberValue::output(ostream& out) const {
 	out << valueOf();
@@ -80,8 +76,8 @@ double NumberValue::valueOf() const {
 
 /* ===== StringValue ===== */
 
-StringValue::StringValue(bool is_const, string str)
-	: Value(value_type, is_const), _str(move(str)) {}
+StringValue::StringValue(string str)
+	: Value(value_type), _str(move(str)) {}
 
 void StringValue::output(ostream& out) const {
 	out << valueOf();
@@ -93,8 +89,8 @@ string StringValue::valueOf() const {
 
 /* ===== BooleanValue ===== */
 
-BooleanValue::BooleanValue(bool is_const, bool boolean)
-	: Value(value_type, is_const), _value(boolean) {}
+BooleanValue::BooleanValue(bool boolean)
+	: Value(value_type), _value(boolean) {}
 
 void BooleanValue::output(ostream& out) const {
 	out << (valueOf() ? "true" : "false");
@@ -107,7 +103,7 @@ bool BooleanValue::valueOf() const {
 /* ===== FunctionValue ===== */
 
 FunctionValue::FunctionValue(string identifier)
-	: Value(value_type, true), _identifier(move(identifier)) {}
+	: Value(value_type), _identifier(move(identifier)) {}
 
 void FunctionValue::output(ostream& out) const {
 	out << _identifier;

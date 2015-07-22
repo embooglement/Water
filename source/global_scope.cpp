@@ -33,7 +33,7 @@ void addUnaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 		 }
 
 		 auto number = toNumber(arguments[0]);
-		 return make_shared<NumberValue>(true, func(number));
+		 return make_shared<NumberValue>(func(number));
 	});
 }
 
@@ -54,7 +54,7 @@ void addBinaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 
 		 auto number1 = toNumber(arguments[0]);
 		 auto number2 = toNumber(arguments[1]);
-		 return make_shared<NumberValue>(true, func(number1, number2));
+		 return make_shared<NumberValue>(func(number1, number2));
 	});
 }
 
@@ -70,7 +70,7 @@ void setupMetaModule() {
 		}
 
 		auto variable_name = toString(argument);
-		return make_shared<BooleanValue>(true, scope->contains(variable_name));
+		return make_shared<BooleanValue>(scope->contains(variable_name));
 	});
 }
 
@@ -106,13 +106,13 @@ void setupIOModule() {
 	addFunctionToGlobalScope("read", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 		string str;
 		cin >> str;
-		return make_shared<StringValue>(true, move(str));
+		return make_shared<StringValue>(move(str));
 	});
 
 	addFunctionToGlobalScope("readln", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 		string str;
 		getline(cin, str);
-		return make_shared<StringValue>(true, move(str));
+		return make_shared<StringValue>(move(str));
 	});
 }
 
@@ -120,8 +120,8 @@ void setupMathModule() {
 	// (note: these are using the long double versions of functions to avoid needing to cast)
 
 	// constants
-	Scope::addToGlobalScope("PI", make_shared<NumberValue>(true, M_PI));
-	Scope::addToGlobalScope("E", make_shared<NumberValue>(true, M_E));
+	Scope::addToGlobalScope("PI", make_shared<NumberValue>(M_PI));
+	Scope::addToGlobalScope("E", make_shared<NumberValue>(M_E));
 
 	// general
 	addUnaryMathFunctionToGlobalScope("abs", fabsl);

@@ -24,7 +24,6 @@ class Scope;
 class Value {
 public:
 	ValueType type() const;
-	bool isConst() const;
 	virtual void output(std::ostream& out) const = 0;
 
 	template <typename Type>
@@ -37,10 +36,9 @@ public:
 	}
 
 protected:
-	Value(ValueType type, bool is_const);
+	Value(ValueType type);
 private:
 	ValueType _type;
-	bool _is_const;
 };
 
 class NullValue : public Value {
@@ -57,7 +55,7 @@ public:
 class NumberValue : public Value {
 public:
 	static const ValueType value_type = ValueType::Number;
-	NumberValue(bool is_const, double number);
+	NumberValue(double number);
 	virtual void output(std::ostream& out) const override;
 	double valueOf() const;
 private:
@@ -75,7 +73,7 @@ public:
 class StringValue : public Value {
 public:
 	static const ValueType value_type = ValueType::String;
-	StringValue(bool is_const, std::string str);
+	StringValue(std::string str);
 	virtual void output(std::ostream& out) const override;
 	std::string valueOf() const;
 private:
@@ -85,7 +83,7 @@ private:
 class BooleanValue : public Value {
 public:
 	static const ValueType value_type = ValueType::Boolean;
-	BooleanValue(bool is_const, bool boolean);
+	BooleanValue(bool boolean);
 	virtual void output(std::ostream& out) const override;
 	bool valueOf() const;
 private:
