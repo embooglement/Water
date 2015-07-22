@@ -14,6 +14,10 @@ const TokenMetaData& ASTNode::meta() const {
 	return _meta;
 }
 
+bool ASTNode::isLValue() const {
+	return false;
+}
+
 shared_ptr<Value> ASTNode::evaluate(shared_ptr<Scope>& scope) const {
 	throw InterpretorError("evaluate not implemented");
 }
@@ -22,6 +26,10 @@ shared_ptr<Value> ASTNode::evaluate(shared_ptr<Scope>& scope) const {
 
 IdentifierNode::IdentifierNode(const TokenMetaData& meta, string identifier)
 	: ASTNode(meta), _identifier(move(identifier)) {}
+
+bool IdentifierNode::isLValue() const {
+	return true;
+}
 
 void IdentifierNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << _identifier;
@@ -108,24 +116,52 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 			break;
 	}
 
+	auto add = [](double x, double y) { return x + y; };
+	auto subtract = [](double x, double y) { return x - y; };
+	auto multiply = [](double x, double y) { return x * y; };
+	auto divide = [](double x, double y) { return x / y; };
+
 	auto lhs = _left->evaluate(scope);
 	auto rhs = _right->evaluate(scope);
 
 	switch (_op) {
+		// Assignments
+		// TODO: make these clone primitives
+		case Builtin::Assignment:
+			scope->update(lhs, rhs);
+			break;
+		case Builtin::AdditionAssignment:
+			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, add));
+			break;
+		case Builtin::SubtractionAssignment:
+			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, subtract));
+			break;
+		case Builtin::MultiplicationAssignment:
+			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, multiply));
+			break;
+		case Builtin::DivisionAssignment:
+			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, divide));
+			break;
+		case Builtin::ModulusAssignment:
+			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, fmodl));
+			break;
+		case Builtin::ExponentAssignment:
+			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, powl));
+			break;
+
 		// Arithmetic
 		case Builtin::Addition:
-			return NumberValue::create(toNumber(lhs) + toNumber(rhs));
+			return NumberValue::applyOperator(lhs, rhs, add);
 		case Builtin::Subtraction:
-			return NumberValue::create(toNumber(lhs) - toNumber(rhs));
+			return NumberValue::applyOperator(lhs, rhs, subtract);
 		case Builtin::Multiplication:
-			return NumberValue::create(toNumber(lhs) * toNumber(rhs));
+			return NumberValue::applyOperator(lhs, rhs, multiply);
 		case Builtin::Division:
-			return NumberValue::create(toNumber(lhs) / toNumber(rhs));
-			break;
+			return NumberValue::applyOperator(lhs, rhs, divide);
 		case Builtin::Modulus:
-			return NumberValue::create(fmod(toNumber(lhs), toNumber(rhs)));
+			return NumberValue::applyOperator(lhs, rhs, fmodl);
 		case Builtin::Exponent:
-			return NumberValue::create(pow(toNumber(lhs), toNumber(rhs)));
+			return NumberValue::applyOperator(lhs, rhs, powl);
 
 		// Comparisons
 		case Builtin::LessThan:
@@ -145,7 +181,7 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 			throw InterpretorError("operator not implemented");
 	}
 
-	return nullptr;
+	return NullValue::get();
 }
 
 /* ===== UnaryOperatorNode ===== */

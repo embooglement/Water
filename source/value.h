@@ -20,6 +20,11 @@ enum class ValueType {
 
 class ASTNode;
 class Scope;
+class Value;
+
+double toNumber(const std::shared_ptr<Value>& var);
+std::string toString(const std::shared_ptr<Value>& var);
+bool toBoolean(const std::shared_ptr<Value>& var);
 
 class Value {
 public:
@@ -66,8 +71,14 @@ public:
 	NumberValue(double number);
 	virtual void output(std::ostream& out) const override;
 	double valueOf() const;
+	void update(double new_value);
 
 	static std::shared_ptr<NumberValue> create(double number);
+
+	template <typename Op>
+	static std::shared_ptr<NumberValue> applyOperator(const std::shared_ptr<Value>& lhs, const std::shared_ptr<Value>& rhs, Op op) {
+		return std::make_shared<NumberValue>(op(toNumber(lhs), toNumber(rhs)));
+	}
 private:
 	double _number;
 };
@@ -78,6 +89,7 @@ public:
 	StringValue(std::string str);
 	virtual void output(std::ostream& out) const override;
 	std::string valueOf() const;
+	void update(std::string new_value);
 
 	static std::shared_ptr<StringValue> create(std::string str);
 private:
@@ -90,6 +102,7 @@ public:
 	BooleanValue(bool boolean);
 	virtual void output(std::ostream& out) const override;
 	bool valueOf() const;
+	void update(bool new_value);
 
 	static std::shared_ptr<BooleanValue> create(bool boolean);
 private:
@@ -128,9 +141,5 @@ public:
 private:
 	const _FuncType _func;
 };
-
-double toNumber(const std::shared_ptr<Value>& var);
-std::string toString(const std::shared_ptr<Value>& var);
-bool toBoolean(const std::shared_ptr<Value>& var);
 
 #endif

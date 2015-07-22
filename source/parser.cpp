@@ -499,6 +499,13 @@ struct ParserHelper {
 				return lhs;
 			}
 
+			if (isAssignmentOperator(op_info)) {
+				if (!lhs->isLValue()) {
+					p.error(lhs->meta(), errors::expected_lvalue);
+					return nullptr;
+				}
+			}
+
 			int token_precedence = op_info.precedence;
 			if (token_precedence < min_precedence) {
 				return lhs;

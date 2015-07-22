@@ -1,0 +1,9 @@
+let x = 3;
+x = 4;
+println(x);
+
+x += 2;
+println(x);
+
+x *= 0.5;
+println(x);

@@ -74,6 +74,10 @@ double NumberValue::valueOf() const {
 	return _number;
 }
 
+void NumberValue::update(double new_value) {
+	_number = new_value;
+}
+
 shared_ptr<NumberValue> NumberValue::create(double number) {
 	return make_shared<NumberValue>(number);
 }
@@ -91,6 +95,10 @@ string StringValue::valueOf() const {
 	return _str;
 }
 
+void StringValue::update(string new_value) {
+	_str = move(new_value);
+}
+
 shared_ptr<StringValue> StringValue::create(string str) {
 	return make_shared<StringValue>(move(str));
 }
@@ -106,6 +114,10 @@ void BooleanValue::output(ostream& out) const {
 
 bool BooleanValue::valueOf() const {
 	return _value;
+}
+
+void BooleanValue::update(bool new_value) {
+	_value = new_value;
 }
 
 shared_ptr<BooleanValue> BooleanValue::create(bool boolean) {

@@ -211,6 +211,10 @@ bool isBinaryOperator(Builtin builtin) {
 	return getBuiltinInfo(builtin).is_binary;
 }
 
+bool isAssignmentOperator(BuiltinInfo builtin_info) {
+	return builtin_info.precedence == assignment_level;
+}
+
 const auto symbol_chars = ([]() -> set<char> {
 	set<char> symbols;
 

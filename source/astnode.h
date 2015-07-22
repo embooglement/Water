@@ -15,6 +15,7 @@ public:
 	ASTNode(const TokenMetaData& meta);
 	virtual ~ASTNode() {}
 	const TokenMetaData& meta() const;
+	virtual bool isLValue() const;
 	virtual void output(std::ostream& out, int indent = 0) const = 0;
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const;
 protected:
@@ -24,6 +25,7 @@ protected:
 class IdentifierNode : public ASTNode {
 public:
 	IdentifierNode(const TokenMetaData& meta, std::string identifier);
+	virtual bool isLValue() const override;
 	virtual void output(std::ostream& out, int indent = 0) const override;
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
 	const std::string& str() const;

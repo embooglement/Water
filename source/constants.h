@@ -116,6 +116,7 @@ std::string getBuiltinString(Builtin builtin);
 BuiltinInfo getBuiltinInfo(Builtin builtin);
 
 bool isBinaryOperator(Builtin builtin);
+bool isAssignmentOperator(BuiltinInfo builtin_info);
 
 extern const std::set<char> symbol_chars;
 
