@@ -74,6 +74,10 @@ double NumberValue::valueOf() const {
 	return _number;
 }
 
+shared_ptr<NumberValue> NumberValue::create(double number) {
+	return make_shared<NumberValue>(number);
+}
+
 /* ===== StringValue ===== */
 
 StringValue::StringValue(string str)
@@ -87,6 +91,10 @@ string StringValue::valueOf() const {
 	return _str;
 }
 
+shared_ptr<StringValue> StringValue::create(string str) {
+	return make_shared<StringValue>(move(str));
+}
+
 /* ===== BooleanValue ===== */
 
 BooleanValue::BooleanValue(bool boolean)
@@ -98,6 +106,10 @@ void BooleanValue::output(ostream& out) const {
 
 bool BooleanValue::valueOf() const {
 	return _value;
+}
+
+shared_ptr<BooleanValue> BooleanValue::create(bool boolean) {
+	return make_shared<BooleanValue>(boolean);
 }
 
 /* ===== FunctionValue ===== */
@@ -141,6 +153,10 @@ shared_ptr<Value> UserDefinedFunctionValue::call(shared_ptr<Scope>& scope, const
 	return argument_scope->get(return_value_alias);
 }
 
+shared_ptr<UserDefinedFunctionValue> UserDefinedFunctionValue::create(string identifier, vector<string> argument_names, shared_ptr<ASTNode> body) {
+	return make_shared<UserDefinedFunctionValue>(move(identifier), move(argument_names), move(body));
+}
+
 /* ===== BuiltinFunctionValue ===== */
 
 BuiltinFunctionValue::BuiltinFunctionValue(string identifier, const BuiltinFunctionValue::_FuncType& func)
@@ -148,4 +164,8 @@ BuiltinFunctionValue::BuiltinFunctionValue(string identifier, const BuiltinFunct
 
 shared_ptr<Value> BuiltinFunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
 	return _func(scope, arguments);
+}
+
+shared_ptr<BuiltinFunctionValue> BuiltinFunctionValue::create(string identifier, const BuiltinFunctionValue::_FuncType& func) {
+	return make_shared<BuiltinFunctionValue>(move(identifier), func);
 }

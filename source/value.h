@@ -66,6 +66,8 @@ public:
 	NumberValue(double number);
 	virtual void output(std::ostream& out) const override;
 	double valueOf() const;
+
+	static std::shared_ptr<NumberValue> create(double number);
 private:
 	double _number;
 };
@@ -76,6 +78,8 @@ public:
 	StringValue(std::string str);
 	virtual void output(std::ostream& out) const override;
 	std::string valueOf() const;
+
+	static std::shared_ptr<StringValue> create(std::string str);
 private:
 	std::string _str;
 };
@@ -86,6 +90,8 @@ public:
 	BooleanValue(bool boolean);
 	virtual void output(std::ostream& out) const override;
 	bool valueOf() const;
+
+	static std::shared_ptr<BooleanValue> create(bool boolean);
 private:
 	bool _value;
 };
@@ -105,6 +111,8 @@ class UserDefinedFunctionValue : public FunctionValue {
 public:
 	UserDefinedFunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
 	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const;
+
+	static std::shared_ptr<UserDefinedFunctionValue> create(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
 private:
 	std::vector<std::string> _argument_names;
 	std::shared_ptr<ASTNode> _body;
@@ -115,6 +123,8 @@ public:
 	typedef std::function<std::shared_ptr<Value>(std::shared_ptr<Scope>&, const std::vector<std::shared_ptr<Value>>&)> _FuncType;
 	BuiltinFunctionValue(std::string identifier, const _FuncType& func);
 	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const override;
+
+	static std::shared_ptr<BuiltinFunctionValue> create(std::string identifier, const _FuncType& func);
 private:
 	const _FuncType _func;
 };

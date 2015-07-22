@@ -45,7 +45,7 @@ void NumberLiteralNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> NumberLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
-	return make_shared<NumberValue>(_number);
+	return NumberValue::create(_number);
 }
 
 /* ===== StringLiteralNode ===== */
@@ -58,7 +58,7 @@ void StringLiteralNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> StringLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
-	return make_shared<StringValue>(_str);
+	return StringValue::create(_str);
 }
 
 /* ===== BooleanLiteralNode ===== */
@@ -70,7 +70,7 @@ void BooleanLiteralNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> BooleanLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
-	return make_shared<BooleanValue>(_boolean);
+	return BooleanValue::create(_boolean);
 }
 
 /* ===== BinaryOperatorNode ===== */
@@ -94,15 +94,15 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 	switch (_op) {
 		case Builtin::LogicalAnd:
 			if (toBoolean(_left->evaluate(scope))) {
-				return make_shared<BooleanValue>(toBoolean(_right->evaluate(scope)));
+				return BooleanValue::create(toBoolean(_right->evaluate(scope)));
 			} else {
-				return make_shared<BooleanValue>(false);
+				return BooleanValue::create(false);
 			}
 		case Builtin::LogicalOr:
 			if (toBoolean(_left->evaluate(scope))) {
-				return make_shared<BooleanValue>(true);
+				return BooleanValue::create(true);
 			} else {
-				return make_shared<BooleanValue>(toBoolean(_right->evaluate(scope)));
+				return BooleanValue::create(toBoolean(_right->evaluate(scope)));
 			}
 		default:
 			break;
@@ -114,32 +114,32 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 	switch (_op) {
 		// Arithmetic
 		case Builtin::Addition:
-			return make_shared<NumberValue>(toNumber(lhs) + toNumber(rhs));
+			return NumberValue::create(toNumber(lhs) + toNumber(rhs));
 		case Builtin::Subtraction:
-			return make_shared<NumberValue>(toNumber(lhs) - toNumber(rhs));
+			return NumberValue::create(toNumber(lhs) - toNumber(rhs));
 		case Builtin::Multiplication:
-			return make_shared<NumberValue>(toNumber(lhs) * toNumber(rhs));
+			return NumberValue::create(toNumber(lhs) * toNumber(rhs));
 		case Builtin::Division:
-			return make_shared<NumberValue>(toNumber(lhs) / toNumber(rhs));
+			return NumberValue::create(toNumber(lhs) / toNumber(rhs));
 			break;
 		case Builtin::Modulus:
-			return make_shared<NumberValue>(fmod(toNumber(lhs), toNumber(rhs)));
+			return NumberValue::create(fmod(toNumber(lhs), toNumber(rhs)));
 		case Builtin::Exponent:
-			return make_shared<NumberValue>(pow(toNumber(lhs), toNumber(rhs)));
+			return NumberValue::create(pow(toNumber(lhs), toNumber(rhs)));
 
 		// Comparisons
 		case Builtin::LessThan:
-			return make_shared<BooleanValue>(toNumber(lhs) < toNumber(rhs));
+			return BooleanValue::create(toNumber(lhs) < toNumber(rhs));
 		case Builtin::LessThanOrEqual:
-			return make_shared<BooleanValue>(toNumber(lhs) <= toNumber(rhs));
+			return BooleanValue::create(toNumber(lhs) <= toNumber(rhs));
 		case Builtin::GreaterThan:
-			return make_shared<BooleanValue>(toNumber(lhs) > toNumber(rhs));
+			return BooleanValue::create(toNumber(lhs) > toNumber(rhs));
 		case Builtin::GreaterThanOrEqual:
-			return make_shared<BooleanValue>(toNumber(lhs) >= toNumber(rhs));
+			return BooleanValue::create(toNumber(lhs) >= toNumber(rhs));
 		case Builtin::EqualTo:
-			return make_shared<BooleanValue>(toNumber(lhs) == toNumber(rhs));
+			return BooleanValue::create(toNumber(lhs) == toNumber(rhs));
 		case Builtin::NotEqualTo:
-			return make_shared<BooleanValue>(toNumber(lhs) != toNumber(rhs));
+			return BooleanValue::create(toNumber(lhs) != toNumber(rhs));
 
 		default:
 			throw InterpretorError("operator not implemented");
@@ -168,11 +168,11 @@ shared_ptr<Value> UnaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 	switch (_op) {
 		// Arithmetic
 		case Builtin::Negation:
-			return make_shared<NumberValue>(-toNumber(expr));
+			return NumberValue::create(-toNumber(expr));
 
 		// Logical
 		case Builtin::LogicalNot:
-			return make_shared<BooleanValue>(!toBoolean(expr));
+			return BooleanValue::create(!toBoolean(expr));
 
 		default:
 			throw InterpretorError("operator not implemented");
@@ -376,7 +376,7 @@ void FunctionDeclarationNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> FunctionDeclarationNode::evaluate(shared_ptr<Scope>& scope) const {
-	return make_shared<UserDefinedFunctionValue>(_identifier, _argument_names, _body);
+	return UserDefinedFunctionValue::create(_identifier, _argument_names, _body);
 }
 
 /* ===== ReturnNode ===== */

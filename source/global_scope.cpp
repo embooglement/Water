@@ -17,7 +17,7 @@ typedef vector<shared_ptr<Value>> Arguments;
 
 template <typename Func>
 void addFunctionToGlobalScope(const string& identifier, Func&& func) {
-	auto func_value = make_shared<BuiltinFunctionValue>(identifier, BuiltinFunctionValue::_FuncType(forward<Func>(func)));
+	auto func_value = BuiltinFunctionValue::create(identifier, BuiltinFunctionValue::_FuncType(forward<Func>(func)));
 	Scope::addToGlobalScope(identifier, move(func_value));
 }
 
@@ -33,7 +33,7 @@ void addUnaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 		 }
 
 		 auto number = toNumber(arguments[0]);
-		 return make_shared<NumberValue>(func(number));
+		 return NumberValue::create(func(number));
 	});
 }
 
@@ -54,7 +54,7 @@ void addBinaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 
 		 auto number1 = toNumber(arguments[0]);
 		 auto number2 = toNumber(arguments[1]);
-		 return make_shared<NumberValue>(func(number1, number2));
+		 return NumberValue::create(func(number1, number2));
 	});
 }
 
@@ -70,7 +70,7 @@ void setupMetaModule() {
 		}
 
 		auto variable_name = toString(argument);
-		return make_shared<BooleanValue>(scope->contains(variable_name));
+		return BooleanValue::create(scope->contains(variable_name));
 	});
 }
 
@@ -106,13 +106,13 @@ void setupIOModule() {
 	addFunctionToGlobalScope("read", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 		string str;
 		cin >> str;
-		return make_shared<StringValue>(move(str));
+		return StringValue::create(move(str));
 	});
 
 	addFunctionToGlobalScope("readln", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 		string str;
 		getline(cin, str);
-		return make_shared<StringValue>(move(str));
+		return StringValue::create(move(str));
 	});
 }
 
@@ -120,8 +120,8 @@ void setupMathModule() {
 	// (note: these are using the long double versions of functions to avoid needing to cast)
 
 	// constants
-	Scope::addToGlobalScope("PI", make_shared<NumberValue>(M_PI));
-	Scope::addToGlobalScope("E", make_shared<NumberValue>(M_E));
+	Scope::addToGlobalScope("PI", NumberValue::create(M_PI));
+	Scope::addToGlobalScope("E", NumberValue::create(M_E));
 
 	// general
 	addUnaryMathFunctionToGlobalScope("abs", fabsl);
@@ -187,7 +187,7 @@ void setupFunctionalModule() {
 		}
 
 		auto func = static_pointer_cast<FunctionValue>(arguments[0]);
-		return make_shared<BuiltinFunctionValue>(name_stream.str(), [arguments, func](ScopePtr& scope, const Arguments& following_arguments) -> ValuePtr {
+		return BuiltinFunctionValue::create(name_stream.str(), [arguments, func](ScopePtr& scope, const Arguments& following_arguments) -> ValuePtr {
 			Arguments new_arguments (next(begin(arguments)), end(arguments));
 			new_arguments.insert(end(new_arguments), begin(following_arguments), end(following_arguments));
 			return func->call(scope, new_arguments);
@@ -204,7 +204,7 @@ void setupFunctionalModule() {
 		name_stream << "constant_";
 		constant_value->output(name_stream);
 
-		return make_shared<BuiltinFunctionValue>(name_stream.str(), [constant_value](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		return BuiltinFunctionValue::create(name_stream.str(), [constant_value](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 			return constant_value;
 		});
 	});
@@ -230,7 +230,7 @@ void setupFunctionalModule() {
 			functions.push_back(move(func));
 		}
 
-		return make_shared<BuiltinFunctionValue>(name_stream.str(), [functions](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		return BuiltinFunctionValue::create(name_stream.str(), [functions](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 			vector<shared_ptr<Value>> new_arguments = arguments;
 			shared_ptr<Value> returned_value = NullValue::get();
 
