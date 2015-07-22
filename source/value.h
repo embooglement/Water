@@ -10,8 +10,8 @@
 #include "runtime_errors.h"
 
 enum class ValueType {
-	Null,
 	Sentinel,
+	Null,
 	Number,
 	String,
 	Boolean,
@@ -41,6 +41,14 @@ private:
 	ValueType _type;
 };
 
+class SentinelValue : public Value {
+public:
+	static const ValueType value_type = ValueType::Sentinel;
+	SentinelValue();
+	virtual void output(std::ostream& out) const override;
+	bool isReturn() const;
+};
+
 class NullValue : public Value {
 private:
 	static const std::shared_ptr<NullValue> _null_value;
@@ -60,14 +68,6 @@ public:
 	double valueOf() const;
 private:
 	double _number;
-};
-
-class SentinelValue : public Value {
-public:
-	static const ValueType value_type = ValueType::Sentinel;
-	SentinelValue();
-	virtual void output(std::ostream& out) const override;
-	bool isReturn() const;
 };
 
 class StringValue : public Value {

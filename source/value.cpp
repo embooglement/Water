@@ -29,6 +29,19 @@ ValueType Value::type() const {
 	return _type;
 }
 
+/* ===== SentinelValue ===== */
+
+SentinelValue::SentinelValue()
+	: Value(value_type) {}
+
+void SentinelValue::output(ostream& out) const {
+	out << "(sentinel)";
+}
+
+bool SentinelValue::isReturn() const {
+	return true;
+}
+
 /* ===== NullValue ===== */
 
 const shared_ptr<NullValue> NullValue::_null_value;
@@ -46,19 +59,6 @@ void NullValue::output(ostream& out) const {
 
 nullptr_t NullValue::valueOf() const {
 	return nullptr;
-}
-
-/* ===== SentinelValue ===== */
-
-SentinelValue::SentinelValue()
-	: Value(value_type) {}
-
-void SentinelValue::output(ostream& out) const {
-	out << "(sentinel)";
-}
-
-bool SentinelValue::isReturn() const {
-	return true;
 }
 
 /* ===== NumberValue ===== */
