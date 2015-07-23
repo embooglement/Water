@@ -568,11 +568,6 @@ struct ParserHelper {
 		return parseBinaryOperator(p, tokens, expr, 0);
 	}
 
-	// <assignment> ::= <expr> <assignment-bin-op> <expr> | <assignment-unary-op> <lvalue>
-	static shared_ptr<AssignmentNode> parseAssignment(Parser& p, TokenStream& tokens) {
-		return nullptr;
-	}
-
 	// <declaration> ::= "var" <identifier> | "var" <identifier> = <expr>
 	static shared_ptr<DeclarationNode> parseDeclaration(Parser& p, TokenStream& tokens) {
 		if (tokens.empty()) {

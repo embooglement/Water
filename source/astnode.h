@@ -144,16 +144,4 @@ private:
 	std::shared_ptr<ASTNode> _expr;
 };
 
-class AssignmentNode : public ASTNode {
-	// TODO: implement
-};
-
-class AssignmentBinaryOpNode : public AssignmentNode {
-	// TODO: implement
-};
-
-class AssignmentUnaryOpNode : public AssignmentNode {
-	// TODO: implement
-};
-
 #endif
