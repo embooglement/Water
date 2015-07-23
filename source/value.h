@@ -32,6 +32,15 @@ public:
 	ValueType type() const;
 	virtual void output(std::ostream& out) const = 0;
 
+	// These will eventually control how types handle pseudo-properties (i.e. length on array)
+	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const {
+		throw InterpretorError("(get not implemented)");
+	}
+
+	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value) {
+		throw InterpretorError("(set not implemented)");
+	}
+
 	template <typename Type>
 	auto valueAs() -> decltype(std::declval<Type>().valueOf()) {
 		if (type() != Type::value_type)	{
@@ -115,7 +124,8 @@ public:
 	static const ValueType value_type = ValueType::Array;
 	ArrayValue(std::vector<std::shared_ptr<Value>> elements);
 	virtual void output(std::ostream& out) const override;
-	const std::vector<std::shared_ptr<Value>>& valueOf() const;
+	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const override;
+	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
 private:
 	std::vector<std::shared_ptr<Value>> _elements;
 };

@@ -22,6 +22,10 @@ shared_ptr<Value> ASTNode::evaluate(shared_ptr<Scope>& scope) const {
 	throw InterpretorError("evaluate not implemented");
 }
 
+void ASTNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
+	throw InterpretorError("(not assignable)");
+}
+
 /* ===== IdentifierNode ===== */
 
 IdentifierNode::IdentifierNode(const TokenMetaData& meta, string identifier)
@@ -37,6 +41,10 @@ void IdentifierNode::output(ostream& out, int indent) const {
 
 shared_ptr<Value> IdentifierNode::evaluate(shared_ptr<Scope>& scope) const {
 	return scope->get(_identifier);
+}
+
+void IdentifierNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
+	scope->update(str(), move(rhs));
 }
 
 const string& IdentifierNode::str() const {
@@ -126,6 +134,38 @@ shared_ptr<Value> ArrayLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
 	return make_shared<ArrayValue>(move(elements));
 }
 
+/* ===== SubscriptNode ===== */
+
+SubscriptNode::SubscriptNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> lhs, std::shared_ptr<ASTNode> index)
+	: ASTNode(meta), _lhs(move(lhs)), _index(move(index)) {}
+
+void SubscriptNode::output(ostream& out, int indent) const {
+	out << io::indent(indent) << "(subscript" << endl;
+	_lhs->output(out, indent + 1);
+	out << endl;
+	_index->output(out, indent + 1);
+	out << endl << io::indent(indent) << ")";
+}
+
+shared_ptr<Value> SubscriptNode::evaluate(shared_ptr<Scope>& scope) const {
+	auto lhs = _lhs->evaluate(scope);
+	if (lhs->type() != ValueType::Array) {
+		throw TypeError("Expression is not of type Array");
+	}
+
+	auto arr = static_pointer_cast<ArrayValue>(lhs);
+	return arr->get(_index->evaluate(scope));
+}
+
+bool SubscriptNode::isLValue() const {
+	return _lhs->isLValue();
+}
+
+void SubscriptNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
+	auto arr = _lhs->evaluate(scope);
+	arr->set(_index->evaluate(scope), move(rhs));
+}
+
 /* ===== BinaryOperatorNode ===== */
 
 BinaryOperatorNode::BinaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> left, shared_ptr<ASTNode> right)
@@ -173,25 +213,25 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 		// Assignments
 		// TODO: make these clone primitives
 		case Builtin::Assignment:
-			scope->update(lhs, rhs);
+			_left->assign(scope, move(rhs));
 			break;
 		case Builtin::AdditionAssignment:
-			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, add));
+			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, add));
 			break;
 		case Builtin::SubtractionAssignment:
-			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, subtract));
+			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, subtract));
 			break;
 		case Builtin::MultiplicationAssignment:
-			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, multiply));
+			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, multiply));
 			break;
 		case Builtin::DivisionAssignment:
-			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, divide));
+			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, divide));
 			break;
 		case Builtin::ModulusAssignment:
-			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, fmodl));
+			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, fmodl));
 			break;
 		case Builtin::ExponentAssignment:
-			scope->update(lhs, NumberValue::applyOperator(lhs, rhs, powl));
+			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, powl));
 			break;
 
 		// Arithmetic

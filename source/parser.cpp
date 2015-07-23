@@ -402,6 +402,7 @@ struct ParserHelper {
 		return make_shared<FunctionCallNode>(call_meta, lhs, arguments);
 	}
 
+	// <array-literal> ::= "[" <expr>,* "]"
 	static shared_ptr<ASTNode> parseArrayLiteral(Parser& p, TokenStream& tokens) {
 		if (tokens.empty()) {
 			return nullptr;
@@ -459,6 +460,52 @@ struct ParserHelper {
 		return make_shared<ArrayLiteralNode>(array_meta, move(elements));
 	}
 
+	// <subscript-expr> ::= <expr> "[" <expr> "]"
+	static shared_ptr<ASTNode> parseSubscript(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
+		if (tokens.empty()) {
+			p.error(lhs->meta(), errors::expected_open_subscript);
+			return nullptr;
+		}
+
+		auto token = tokens.get();
+		auto subscript_meta = token.meta();
+
+		if (!isBuiltin(token.text(), Builtin::OpenSubscript)) {
+			p.error(token.meta(), errors::expected_open_subscript);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		if (tokens.empty()) {
+			p.error(token.meta(), errors::expected_close_subscript);
+			return nullptr;
+		}
+
+		token = tokens.get();
+		auto index = parseExpression(p, tokens);
+
+		if (!index) {
+			p.error(token.meta(), errors::expected_expression);
+			return nullptr;
+		}
+
+		if (tokens.empty()) {
+			p.error(token.meta(), errors::expected_close_subscript);
+			return nullptr;
+		}
+
+		token = tokens.get();
+
+		if (!isBuiltin(token.text(), Builtin::CloseSubscript)) {
+			p.error(token.meta(), errors::expected_close_subscript);
+			return nullptr;
+		}
+
+		tokens.eat();
+		return make_shared<SubscriptNode>(subscript_meta, move(lhs), move(index));
+	}
+
 	// <expr-primary> ::= <number-literal> | <string-literal> | <boolean-literal> | <function-decl> | <function-call>
 	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenStream& tokens) {
 		if (tokens.empty()) {
@@ -467,7 +514,7 @@ struct ParserHelper {
 
 		shared_ptr<ASTNode> expr;
 		auto token = tokens.get();
-		const auto& token_text = token.text();
+		auto token_text = token.text();
 
 		switch (token.type()) {
 			case TokenType::Builtin: {
@@ -519,11 +566,12 @@ struct ParserHelper {
 		}
 
 		token = tokens.get();
+		token_text = token.text();
 
 		if (isBuiltin(token.text(), Builtin::OpenFunctionCall)) {
 			expr = parseFunctionCall(p, tokens, expr);
-		} else if (false) {
-			// TODO: parse subscript
+		} else if (isBuiltin(token_text, Builtin::OpenSubscript)) {
+			expr = parseSubscript(p, tokens, expr);
 		}
 
 		return expr;

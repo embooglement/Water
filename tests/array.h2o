@@ -7,3 +7,13 @@ println([1, 2]);
 println([1, 2, 3]);
 println([1,]);
 println([1,2,]);
+
+let y = [1, 2, 3];
+
+println(y[0]);
+println(y[0.5]);
+println(y[1]);
+println(y[2]);
+
+y[0] = 5;
+println(y);

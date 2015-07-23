@@ -26,6 +26,8 @@ namespace errors {
 	static const std::string expected_close_single_quote = "expected closing single quote";
 	static const std::string expected_open_array_literal = "expected opening square brace";
 	static const std::string expected_close_array_literal = "expected closing square brace";
+	static const std::string expected_open_subscript = "expected opening square brace";
+	static const std::string expected_close_subscript = "expected closing square brace";
 	static const std::string expected_element_delimiter = "expected a comma";
 	static const std::string expected_lvalue = "expected lvalue expression";
 	static const std::string unexpected_token = "unexpected token";

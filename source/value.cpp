@@ -143,8 +143,30 @@ void ArrayValue::output(std::ostream& out) const {
 	out << "]";
 }
 
-const vector<shared_ptr<Value>>& ArrayValue::valueOf() const {
-	return _elements;
+shared_ptr<Value> ArrayValue::get(const shared_ptr<Value>& index) const {
+	if (index->type() != ValueType::Number) {
+		throw TypeError("Expression is not of type Number");
+	}
+
+	int i = toNumber(index);
+	if (i >= _elements.size()) {
+		throw OutOfBoundsError(i, _elements.size());
+	}
+
+	return _elements[i];
+}
+
+void ArrayValue::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
+	if (index->type() != ValueType::Number) {
+		throw TypeError("Expression is not of type Number");
+	}
+
+	int i = toNumber(index);
+	if (i >= _elements.size()) {
+		throw OutOfBoundsError(i, _elements.size());
+	}
+
+	_elements[i] = move(new_value);
 }
 
 /* ===== FunctionValue ===== */

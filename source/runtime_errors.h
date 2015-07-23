@@ -30,6 +30,12 @@ public:
 		: std::runtime_error("Incorrect number of arguments passed to " + identifier + ": expected " + std::to_string(expected) + " but recieved " + std::to_string(passed)) {}
 };
 
+class OutOfBoundsError : public std::runtime_error {
+public:
+	OutOfBoundsError(int index, int length)
+		: std::runtime_error("Invalid index: " + std::to_string(index) + " for array of length " + std::to_string(length)) {}
+};
+
 class InterpretorError : public std::runtime_error {
 public:
 	InterpretorError(const std::string& error_message)

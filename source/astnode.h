@@ -18,6 +18,7 @@ public:
 	virtual bool isLValue() const;
 	virtual void output(std::ostream& out, int indent = 0) const = 0;
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const;
+	virtual void assign(std::shared_ptr<Scope>& scope, std::shared_ptr<Value> rhs) const;
 protected:
 	TokenMetaData _meta;
 };
@@ -28,6 +29,7 @@ public:
 	virtual bool isLValue() const override;
 	virtual void output(std::ostream& out, int indent = 0) const override;
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
+	virtual void assign(std::shared_ptr<Scope>& scope, std::shared_ptr<Value> rhs) const override;
 	const std::string& str() const;
 private:
 	std::string _identifier;
@@ -74,6 +76,18 @@ public:
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
 private:
 	std::vector<std::shared_ptr<ASTNode>> _elements;
+};
+
+class SubscriptNode : public ASTNode {
+public:
+	SubscriptNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> lhs, std::shared_ptr<ASTNode> index);
+	virtual bool isLValue() const override;
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
+	virtual void assign(std::shared_ptr<Scope>& scope, std::shared_ptr<Value> rhs) const override;
+private:
+	std::shared_ptr<ASTNode> _lhs;
+	std::shared_ptr<ASTNode> _index;
 };
 
 class BinaryOperatorNode : public ASTNode {
