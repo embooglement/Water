@@ -74,6 +74,22 @@ void setupMetaModule() {
 	});
 }
 
+void setupDataStructuresModule() {
+	addFunctionToGlobalScope("length", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		if (arguments.size() != 1) {
+			throw InvalidArgumentsCountError("length", 1, arguments.size());
+		}
+
+		auto&& argument = arguments[0];
+		if (argument->type() != ValueType::Array) {
+			throw TypeError("Argument is not of type Array");
+		}
+
+		auto arr = static_pointer_cast<ArrayValue>(argument);
+		return NumberValue::create(arr->length());
+	});
+}
+
 void setupIOModule() {
 	addFunctionToGlobalScope("print", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
 		auto arguments_count = arguments.size();
@@ -250,6 +266,7 @@ void setupFunctionalModule() {
 
 void setupGlobalScope() {
 	setupMetaModule();
+	setupDataStructuresModule();
 	setupIOModule();
 	setupMathModule();
 	setupFunctionalModule();

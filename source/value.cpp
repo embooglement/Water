@@ -169,6 +169,10 @@ void ArrayValue::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value
 	_elements[i] = move(new_value);
 }
 
+unsigned int ArrayValue::length() const {
+	return _elements.size();
+}
+
 /* ===== FunctionValue ===== */
 
 FunctionValue::FunctionValue(string identifier)

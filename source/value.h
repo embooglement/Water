@@ -126,6 +126,7 @@ public:
 	virtual void output(std::ostream& out) const override;
 	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const override;
 	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
+	unsigned int length() const;
 private:
 	std::vector<std::shared_ptr<Value>> _elements;
 };
