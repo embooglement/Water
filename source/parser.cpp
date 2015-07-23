@@ -305,6 +305,99 @@ struct ParserHelper {
 		return make_shared<FunctionDeclarationNode>(function_decl_meta, "", arguments, body);
 	}
 
+	// <paren-expr> ::= "(" <expr> ")"
+	static shared_ptr<ASTNode> parseParenthesesExpression(Parser& p, TokenStream& tokens) {
+		if (tokens.empty()) {
+			return nullptr;
+		}
+
+		auto token = tokens.get();
+		if (!isBuiltin(token.text(), Builtin::OpenParen)) {
+			p.error(token.meta(), errors::expected_open_paren);
+			return nullptr;
+		}
+
+		tokens.eat();
+		if (tokens.empty()) {
+			p.error(token.meta(), errors::expected_expression);
+			return nullptr;
+		}
+
+		auto expr = parseExpression(p, tokens);
+		if (!expr) {
+			p.error(token.meta(), errors::expected_expression);
+			return nullptr;
+		}
+
+		token = tokens.get();
+		if (!isBuiltin(token.text(), Builtin::CloseParen)) {
+			p.error(token.meta(), errors::expected_close_paren);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		return expr;
+	}
+
+	static shared_ptr<ASTNode> parseFunctionCall(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
+		if (tokens.empty()) {
+			p.error(lhs->meta(), errors::expected_open_func_call);
+			return nullptr;
+		}
+
+		auto token = tokens.get();
+		auto call_meta = token.meta();
+
+		if (!isBuiltin(token.text(), Builtin::OpenFunctionCall)) {
+			p.error(token.meta(), errors::expected_open_func_call);
+			return nullptr;
+		}
+
+		tokens.eat();
+		if (tokens.empty()) {
+			p.error(token.meta(), errors::expected_close_func_call);
+			return nullptr;
+		}
+
+		vector<shared_ptr<ASTNode>> arguments;
+
+		while (true) {
+			auto argument = parseExpression(p, tokens);
+			if (!argument) {
+				break;
+			}
+
+			arguments.push_back(argument);
+
+			token = tokens.get();
+			const auto& token_text = token.text();
+
+			if (isBuiltin(token_text, Builtin::CloseFunctionCall)) {
+				break;
+			}
+
+			if (!isBuiltin(token_text, Builtin::ArgumentDelimiter)) {
+				p.error(token.meta(), errors::expected_argument_delimiter);
+				return nullptr;
+			}
+
+			tokens.eat();
+			if (tokens.empty()) {
+				p.error(token.meta(), errors::expected_close_func_call);
+			}
+		}
+
+		token = tokens.get();
+		if (!isBuiltin(token.text(), Builtin::CloseFunctionCall)) {
+			p.error(token.meta(), errors::expected_close_func_call);
+			return nullptr;
+		}
+
+		tokens.eat();
+		return make_shared<FunctionCallNode>(call_meta, lhs, arguments);
+	}
+
 	// <expr-primary> ::= <number-literal> | <string-literal> | <boolean-literal> | <function-decl> | <function-call>
 	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenStream& tokens) {
 		if (tokens.empty()) {
@@ -313,72 +406,42 @@ struct ParserHelper {
 
 		shared_ptr<ASTNode> expr;
 		auto token = tokens.get();
-		bool input_ended = false;
-		bool allow_function_call = false;
+		const auto& token_text = token.text();
 
 		switch (token.type()) {
 			case TokenType::Builtin: {
-				const string& token_text = token.text();
-
-				// TODO: Reorder and break into smaller functions if possible
 				if (isBuiltin(token_text, Builtin::TrueLiteral)) {
 					tokens.eat();
 					expr = make_shared<BooleanLiteralNode>(token.meta(), true);
-					break;
 				} else if (isBuiltin(token_text, Builtin::FalseLiteral)) {
 					tokens.eat();
 					expr = make_shared<BooleanLiteralNode>(token.meta(), false);
-					break;
 				} else if (isBuiltin(token_text, Builtin::NullLiteral)) {
 					tokens.eat();
 					expr = make_shared<NullLiteralNode>(token.meta());
-					break;
 				} else if (isBuiltin(token_text, Builtin::FunctionDeclaration)) {
 					expr = parseFunctionDeclaration(p, tokens);
-					if (!expr) {
-						return nullptr;
-					}
-					break;
 				} else if (isBuiltin(token_text, Builtin::Return)) {
 					auto return_meta = token.meta();
 					tokens.eat();
-					expr = parseExpression(p, tokens);
-					return make_shared<ReturnNode>(return_meta, expr);
-				} else if (isBuiltin(token.text(), Builtin::OpenParen)) {
-					tokens.eat();
-					if (tokens.empty()) {
-						p.error(token.meta(), errors::expected_expression);
-						return nullptr;
-					}
 
-					expr = parseExpression(p, tokens);
-					if (!expr) {
-						p.error(token.meta(), errors::expected_expression);
-						return nullptr;
-					}
-
-					auto next_token = tokens.get();
-					if (!isBuiltin(next_token.text(), Builtin::CloseParen)) {
-						p.error(next_token.meta(), errors::expected_close_paren);
-						return nullptr;
-					}
-
-					tokens.eat();
-					input_ended = tokens.empty();
+					auto rhs = parseExpression(p, tokens);
+					expr = make_shared<ReturnNode>(return_meta, rhs);
+				} else if (isBuiltin(token_text, Builtin::OpenParen)) {
+					expr = parseParenthesesExpression(p, tokens);
 				}
 			} break;
 			case TokenType::Identifier: {
-				allow_function_call = true;
 				tokens.eat();
-				expr = make_shared<IdentifierNode>(token.meta(), token.text());
+				expr = make_shared<IdentifierNode>(token.meta(), token_text);
 			} break;
 			case TokenType::NumberLiteral: {
 				tokens.eat();
-				expr = make_shared<NumberLiteralNode>(token.meta(), token.text());
+				expr = make_shared<NumberLiteralNode>(token.meta(), token_text);
 			} break;
 			case TokenType::StringLiteral: {
 				tokens.eat();
-				expr = make_shared<StringLiteralNode>(token.meta(), token.text());
+				expr = make_shared<StringLiteralNode>(token.meta(), token_text);
 			} break;
 			default:
 				break;
@@ -392,48 +455,10 @@ struct ParserHelper {
 			return expr;
 		}
 
-		auto next_token = tokens.get();
-		if (allow_function_call && isBuiltin(next_token.text(), Builtin::OpenFunctionCall)) {
-			tokens.eat();
-			if (tokens.empty()) {
-				p.error(next_token.meta(), errors::expected_close_func_call);
-				return nullptr;
-			}
+		token = tokens.get();
 
-			vector<shared_ptr<ASTNode>> arguments;
-
-			while (true) {
-				auto argument = parseExpression(p, tokens);
-				if (!argument) {
-					break;
-				}
-
-				arguments.push_back(argument);
-
-				next_token = tokens.get();
-				if (isBuiltin(next_token.text(), Builtin::CloseFunctionCall)) {
-					break;
-				}
-
-				if (!isBuiltin(next_token.text(), Builtin::ArgumentDelimiter)) {
-					p.error(next_token.meta(), errors::expected_argument_delimiter);
-					return nullptr;
-				}
-
-				tokens.eat();
-				if (tokens.empty()) {
-					p.error(next_token.meta(), errors::expected_close_func_call);
-				}
-			}
-
-			next_token = tokens.get();
-			if (!isBuiltin(next_token.text(), Builtin::CloseFunctionCall)) {
-				p.error(next_token.meta(), errors::expected_close_func_call);
-				return nullptr;
-			}
-
-			tokens.eat();
-			expr = make_shared<FunctionCallNode>(token.meta(), expr, arguments);
+		if (isBuiltin(token.text(), Builtin::OpenFunctionCall)) {
+			expr = parseFunctionCall(p, tokens, expr);
 		}
 
 		return expr;

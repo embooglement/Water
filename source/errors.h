@@ -5,7 +5,9 @@
 #include "token.h"
 
 namespace errors {
+	static const std::string expected_open_paren = "expected opening parenthesis";
 	static const std::string expected_close_paren = "expected closing parenthesis";
+	static const std::string expected_open_func_call = "expected opening parenthesis";
 	static const std::string expected_close_func_call = "expected closing parenthesis";
 	static const std::string expected_close_func_declaration = "expected closing parenthesis";
 	static const std::string expected_open_control_flow_condition = "expected opening parenthesis";

@@ -151,7 +151,7 @@ shared_ptr<Value> UserDefinedFunctionValue::call(shared_ptr<Scope>& scope, const
 	int arguments_expected_size = _argument_names.size();
 
 	if (arguments.size() != _argument_names.size()) {
-		throw InvalidArgumentsCountError(id(), _argument_names.size(), arguments.size());
+		throw InvalidArgumentsCountError(id(), arguments_expected_size, arguments_passed_size);
 	}
 
 	auto argument_scope = scope->createNestedScope();
