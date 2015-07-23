@@ -5,6 +5,7 @@
 #include "token.h"
 
 namespace errors {
+	// TODO: organize these errors and make them nicer
 	static const std::string expected_open_paren = "expected opening parenthesis";
 	static const std::string expected_close_paren = "expected closing parenthesis";
 	static const std::string expected_open_func_call = "expected opening parenthesis";
@@ -23,6 +24,9 @@ namespace errors {
 	static const std::string expected_close_block = "expected closing curly brace";
 	static const std::string expected_close_double_quote = "expected closing double quote";
 	static const std::string expected_close_single_quote = "expected closing single quote";
+	static const std::string expected_open_array_literal = "expected opening square brace";
+	static const std::string expected_close_array_literal = "expected closing square brace";
+	static const std::string expected_element_delimiter = "expected a comma";
 	static const std::string expected_lvalue = "expected lvalue expression";
 	static const std::string unexpected_token = "unexpected token";
 }

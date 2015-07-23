@@ -124,6 +124,29 @@ shared_ptr<BooleanValue> BooleanValue::create(bool boolean) {
 	return make_shared<BooleanValue>(boolean);
 }
 
+/* ===== ArrayValue ===== */
+
+ArrayValue::ArrayValue(std::vector<std::shared_ptr<Value>> elements)
+	: Value(value_type), _elements(move(elements)) {}
+
+void ArrayValue::output(std::ostream& out) const {
+	out << "[";
+
+	for (int i = 0; i < _elements.size(); ++i) {
+		_elements[i]->output(out);
+
+		if (i + 1 < _elements.size()) {
+			out << ", ";
+		}
+	}
+
+	out << "]";
+}
+
+const vector<shared_ptr<Value>>& ArrayValue::valueOf() const {
+	return _elements;
+}
+
 /* ===== FunctionValue ===== */
 
 FunctionValue::FunctionValue(string identifier)

@@ -67,6 +67,15 @@ public:
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
 };
 
+class ArrayLiteralNode : public ASTNode {
+public:
+	ArrayLiteralNode(const TokenMetaData& meta, std::vector<std::shared_ptr<ASTNode>> elements);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
+private:
+	std::vector<std::shared_ptr<ASTNode>> _elements;
+};
+
 class BinaryOperatorNode : public ASTNode {
 public:
 	BinaryOperatorNode(const TokenMetaData& meta, Builtin op, std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right);

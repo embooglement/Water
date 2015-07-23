@@ -15,7 +15,8 @@ enum class ValueType {
 	Number,
 	String,
 	Boolean,
-	Function
+	Function,
+	Array
 };
 
 class ASTNode;
@@ -108,6 +109,18 @@ public:
 private:
 	bool _value;
 };
+
+class ArrayValue : public Value {
+public:
+	static const ValueType value_type = ValueType::Array;
+	ArrayValue(std::vector<std::shared_ptr<Value>> elements);
+	virtual void output(std::ostream& out) const override;
+	const std::vector<std::shared_ptr<Value>>& valueOf() const;
+private:
+	std::vector<std::shared_ptr<Value>> _elements;
+};
+
+// TODO: maybe add a EmptyArrayValue class as optimization?
 
 class FunctionValue : public Value {
 public:

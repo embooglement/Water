@@ -196,6 +196,10 @@ struct ParserHelper {
 			statement = parseExpression(p, tokens);
 		}
 
+		if (!statement) {
+			return nullptr;
+		}
+
 		if (!require_semicolon) {
 			return statement;
 		}
@@ -398,6 +402,63 @@ struct ParserHelper {
 		return make_shared<FunctionCallNode>(call_meta, lhs, arguments);
 	}
 
+	static shared_ptr<ASTNode> parseArrayLiteral(Parser& p, TokenStream& tokens) {
+		if (tokens.empty()) {
+			return nullptr;
+		}
+
+		auto token = tokens.get();
+		if (!isBuiltin(token.text(), Builtin::OpenArrayLiteral)) {
+			p.error(token.meta(), errors::expected_open_array_literal);
+			return nullptr;
+		}
+
+		auto array_meta = token.meta();
+		vector<shared_ptr<ASTNode>> elements;
+
+		tokens.eat();
+
+		while (tokens.hasNext()) {
+			token = tokens.get();
+
+			if (isBuiltin(token.text(), Builtin::CloseArrayLiteral)) {
+				break;
+			}
+
+			auto expr = parseExpression(p, tokens);
+			elements.push_back(move(expr));
+
+			if (tokens.empty()) {
+				p.error(token.meta(), errors::expected_close_array_literal);
+				return nullptr;
+			}
+
+			token = tokens.get();
+			const auto& token_text = token.text();
+
+			if (isBuiltin(token_text, Builtin::ElementDelimiter)) {
+				tokens.eat();
+			} else if (!isBuiltin(token_text, Builtin::CloseArrayLiteral)) {
+				p.error(token.meta(), errors::expected_element_delimiter);
+				return nullptr;
+			}
+		}
+
+		if (tokens.empty()) {
+			p.error(token.meta(), errors::expected_close_array_literal);
+			return nullptr;
+		}
+
+		token = tokens.get();
+		if (!isBuiltin(token.text(), Builtin::CloseArrayLiteral)) {
+			p.error(token.meta(), errors::expected_close_array_literal);
+			return nullptr;
+		}
+
+		tokens.eat();
+		return make_shared<ArrayLiteralNode>(array_meta, move(elements));
+	}
+
 	// <expr-primary> ::= <number-literal> | <string-literal> | <boolean-literal> | <function-decl> | <function-call>
 	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenStream& tokens) {
 		if (tokens.empty()) {
@@ -429,6 +490,8 @@ struct ParserHelper {
 					expr = make_shared<ReturnNode>(return_meta, rhs);
 				} else if (isBuiltin(token_text, Builtin::OpenParen)) {
 					expr = parseParenthesesExpression(p, tokens);
+				} else if (isBuiltin(token_text, Builtin::OpenArrayLiteral)) {
+					expr = parseArrayLiteral(p, tokens);
 				}
 			} break;
 			case TokenType::Identifier: {
@@ -459,6 +522,8 @@ struct ParserHelper {
 
 		if (isBuiltin(token.text(), Builtin::OpenFunctionCall)) {
 			expr = parseFunctionCall(p, tokens, expr);
+		} else if (false) {
+			// TODO: parse subscript
 		}
 
 		return expr;

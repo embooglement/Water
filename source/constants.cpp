@@ -17,9 +17,6 @@ const map<Builtin, string> builtins = {
 	{ Builtin::OpenControlFlowCondition, "(" },
 	{ Builtin::CloseControlFlowCondition, ")" },
 
-	{ Builtin::OpenIndex, "[" },
-	{ Builtin::CloseIndex, "]" },
-
 	{ Builtin::OpenBlock, "{" },
 	{ Builtin::CloseBlock, "}" },
 
@@ -73,7 +70,13 @@ const map<Builtin, string> builtins = {
 	{ Builtin::FunctionDeclaration, "func" },
 	{ Builtin::FunctionOpenArgumentList, "(" },
 	{ Builtin::FunctionCloseArgumentList, ")" },
-	{ Builtin::Return, "return" }
+	{ Builtin::Return, "return" },
+
+	{ Builtin::OpenArrayLiteral, "[" },
+	{ Builtin::CloseArrayLiteral, "]" },
+	{ Builtin::OpenSubscript, "[" },
+	{ Builtin::CloseSubscript, "]" },
+	{ Builtin::ElementDelimiter, "," }
 };
 
 const int assignment_level = 0;

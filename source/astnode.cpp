@@ -95,6 +95,37 @@ shared_ptr<Value> NullLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
 	return NullValue::get();
 }
 
+/* ===== ArrayLiteralNode ===== */
+
+ArrayLiteralNode::ArrayLiteralNode(const TokenMetaData& meta, vector<shared_ptr<ASTNode>> elements)
+	: ASTNode(meta), _elements(move(elements)) {}
+
+void ArrayLiteralNode::output(ostream& out, int indent) const {
+	if (_elements.empty()) {
+		out << io::indent(indent) << "(array 0)";
+		return;
+	}
+
+	out << io::indent(indent) << "(array " << _elements.size() << endl;
+
+	for (auto&& element : _elements) {
+		element->output(out, indent + 1);
+		out << endl;
+	}
+
+	out << io::indent(indent) << ")";
+}
+
+shared_ptr<Value> ArrayLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
+	vector<shared_ptr<Value>> elements;
+
+	for (auto&& element_node : _elements) {
+		elements.push_back(element_node->evaluate(scope));
+	}
+
+	return make_shared<ArrayValue>(move(elements));
+}
+
 /* ===== BinaryOperatorNode ===== */
 
 BinaryOperatorNode::BinaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> left, shared_ptr<ASTNode> right)

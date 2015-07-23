@@ -25,9 +25,6 @@ enum class Builtin {
 	OpenControlFlowCondition,
 	CloseControlFlowCondition,
 
-	OpenIndex,
-	CloseIndex,
-
 	OpenBlock,
 	CloseBlock,
 
@@ -83,7 +80,13 @@ enum class Builtin {
 	FunctionDeclaration,
 	FunctionOpenArgumentList,
 	FunctionCloseArgumentList,
-	Return
+	Return,
+
+	OpenArrayLiteral,
+	CloseArrayLiteral,
+	OpenSubscript,
+	CloseSubscript,
+	ElementDelimiter
 };
 
 enum class BindingDirection {
