@@ -101,6 +101,7 @@ const map<Builtin, BuiltinInfo> builtin_info = {
 	{ Builtin::MultiplicationAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
 	{ Builtin::DivisionAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
 	{ Builtin::ModulusAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
+	{ Builtin::ExponentAssignment, { true, true, assignment_level, BindingDirection::RightAssociative } },
 
 	{ Builtin::LogicalOr, { true, true, logical_or_level, BindingDirection::LeftAssociative } },
 
