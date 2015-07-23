@@ -199,7 +199,7 @@ shared_ptr<Value> UserDefinedFunctionValue::call(shared_ptr<Scope>& scope, const
 	int arguments_passed_size = arguments.size();
 	int arguments_expected_size = _argument_names.size();
 
-	if (arguments.size() != _argument_names.size()) {
+	if (arguments_passed_size != arguments_expected_size) {
 		throw InvalidArgumentsCountError(id(), arguments_expected_size, arguments_passed_size);
 	}
 
