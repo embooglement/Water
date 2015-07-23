@@ -9,9 +9,7 @@
 
 using namespace std;
 
-static bool isSymbol(char c) {
-	return symbol_chars.count(c) > 0;
-}
+// TODO: move these helpers somewhere else
 
 static bool isIdentifier(char c, bool allow_digits = false) {
 	return (isalpha(c) || c == '_') || (allow_digits && isdigit(c));
@@ -93,8 +91,8 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 
 			TokenType type = TokenType::Identifier;
 
-			if (keywords.count(identifier) > 0) {
-				type = TokenType::Keyword;
+			if (isKeyword(identifier)) {
+				type = TokenType::Builtin;
 			}
 
 			push_token(type, identifier);
@@ -220,7 +218,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 
 				if (isSymbol(peeked)) {
 					if (operator_was_matched && !isBuiltin(op + peeked)) {
-						push_token(TokenType::Operator, op);
+						push_token(TokenType::Builtin, op);
 						break;
 					}
 
@@ -229,7 +227,7 @@ pair<vector<Token>, int> Lexer::tokenize(istream& input, const string& filename)
 					operator_was_matched = isBuiltin(op);
 				} else {
 					if (operator_was_matched) {
-						push_token(TokenType::Operator, op);
+						push_token(TokenType::Builtin, op);
 					} else {
 						invalid_token("unknown operator: " + op);
 					}

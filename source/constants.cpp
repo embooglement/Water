@@ -2,16 +2,7 @@
 
 using namespace std;
 
-// TODO: calulate keywords based on Builtins
-
-const set<string> keywords = {
-	"if", "else", "while", "for",
-	"and", "or", "not",
-	"true", "false",
-	"func", "return"
-};
-
-const map<Builtin, string> operators = {
+const map<Builtin, string> builtins = {
 	{ Builtin::Assignment, "=" },
 	{ Builtin::AccessMember, "." },
 	{ Builtin::StatementDelimiter, ";" },
@@ -140,9 +131,9 @@ const map<Builtin, BuiltinInfo> builtin_info = {
 	{ Builtin::AccessMember, { true, true, member_access_level, BindingDirection::LeftAssociative } },
 };
 
-bool isBuiltin(const string& op) {
-	for (auto&& op_pair : operators) {
-		if (op_pair.second == op) {
+bool isBuiltin(const string& builtin_text) {
+	for (auto&& builtin_pair : builtins) {
+		if (builtin_pair.second == builtin_text) {
 			return true;
 		}
 	}
@@ -151,23 +142,19 @@ bool isBuiltin(const string& op) {
 }
 
 bool isBuiltin(const string& op, Builtin builtin) {
-	auto it = operators.find(builtin);
-	if (it != end(operators)) {
+	auto it = builtins.find(builtin);
+	if (it != end(builtins)) {
 		return it->second == op;
 	}
 
 	return false;
 }
 
-bool isBuiltin(TokenType token_type) {
-	return token_type == TokenType::Keyword || token_type == TokenType::Operator;
-}
-
-Builtin getBinaryBuiltin(const string& op) {
-	for (auto&& op_pair : operators) {
-		if (op_pair.second == op) {
-			if (isBinaryOperator(op_pair.first)) {
-				return op_pair.first;
+Builtin getBinaryBuiltin(const string& builtin_text) {
+	for (auto&& builtin_pair : builtins) {
+		if (builtin_pair.second == builtin_text) {
+			if (isBinaryOperator(builtin_pair.first)) {
+				return builtin_pair.first;
 			}
 		}
 	}
@@ -175,11 +162,11 @@ Builtin getBinaryBuiltin(const string& op) {
 	return Builtin::Invalid;
 }
 
-Builtin getUnaryBuiltin(const string& op) {
-	for (auto&& op_pair : operators) {
-		if (op_pair.second == op) {
-			if (!isBinaryOperator(op_pair.first)) {
-				return op_pair.first;
+Builtin getUnaryBuiltin(const string& builtin_text) {
+	for (auto&& builtin_pair : builtins) {
+		if (builtin_pair.second == builtin_text) {
+			if (!isBinaryOperator(builtin_pair.first)) {
+				return builtin_pair.first;
 			}
 		}
 	}
@@ -188,9 +175,9 @@ Builtin getUnaryBuiltin(const string& op) {
 }
 
 string getBuiltinString(Builtin builtin) {
-	auto it = operators.find(builtin);
+	auto it = builtins.find(builtin);
 
-	if (it != end(operators)) {
+	if (it != end(builtins)) {
 		return it->second;
 	}
 
@@ -218,11 +205,34 @@ bool isAssignmentOperator(BuiltinInfo builtin_info) {
 const auto symbol_chars = ([]() -> set<char> {
 	set<char> symbols;
 
-	if (symbols.empty()) {
-		for (const auto& op : operators) {
-			symbols.insert(op.second.begin(), op.second.end());
+	for (const auto& builtin_pair : builtins) {
+		const auto& builtin_text = builtin_pair.second;
+		if (!builtin_text.empty() && !isalpha(builtin_text[0])) {
+			symbols.insert(begin(builtin_text), end(builtin_text));
 		}
 	}
 
 	return symbols;
 })();
+
+bool isSymbol(char c) {
+	return symbol_chars.count(c) > 0;
+}
+
+const auto keywords = ([]() -> set<string> {
+	set<string> keywords;
+
+	for (const auto& builtin_pair : builtins) {
+		const auto& builtin_text = builtin_pair.second;
+		if (!builtin_text.empty() && isalpha(builtin_text[0])) {
+			keywords.insert(builtin_text);
+		}
+	}
+
+	return keywords;
+})();
+
+bool isKeyword(const string& text) {
+	return keywords.count(text) > 0;
+}
+

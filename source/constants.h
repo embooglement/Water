@@ -85,9 +85,6 @@ enum class Builtin {
 	Return
 };
 
-extern const std::set<std::string> keywords;
-extern const std::map<Builtin, std::string> operators;
-
 enum class BindingDirection {
 	None,
 	LeftAssociative,
@@ -107,7 +104,6 @@ extern const std::map<Builtin, BuiltinInfo> builtin_info;
 
 bool isBuiltin(const std::string& op);
 bool isBuiltin(const std::string& op, Builtin builtin);
-bool isBuiltin(TokenType token_type);
 
 Builtin getBinaryBuiltin(const std::string& op);
 Builtin getUnaryBuiltin(const std::string& op);
@@ -118,6 +114,7 @@ BuiltinInfo getBuiltinInfo(Builtin builtin);
 bool isBinaryOperator(Builtin builtin);
 bool isAssignmentOperator(BuiltinInfo builtin_info);
 
-extern const std::set<char> symbol_chars;
+bool isSymbol(char c);
+bool isKeyword(const std::string& text);
 
 #endif

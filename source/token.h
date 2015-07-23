@@ -7,12 +7,11 @@
 enum class TokenType {
 	UnknownToken = -2,
 	InvalidToken = -1,
+	Builtin,
 	NumberLiteral,
 	StringLiteral,
 	Identifier,
-	Operator,
-	Comment,
-	Keyword
+	Comment
 };
 
 std::ostream& operator<<(std::ostream& out, TokenType type);

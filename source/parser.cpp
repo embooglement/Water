@@ -317,9 +317,10 @@ struct ParserHelper {
 		bool allow_function_call = false;
 
 		switch (token.type()) {
-			case TokenType::Keyword: {
+			case TokenType::Builtin: {
 				const string& token_text = token.text();
 
+				// TODO: Reorder and break into smaller functions if possible
 				if (isBuiltin(token_text, Builtin::TrueLiteral)) {
 					tokens.eat();
 					expr = make_shared<BooleanLiteralNode>(token.meta(), true);
@@ -339,10 +340,7 @@ struct ParserHelper {
 					tokens.eat();
 					expr = parseExpression(p, tokens);
 					return make_shared<ReturnNode>(return_meta, expr);
-				}
-			}
-			case TokenType::Operator: {
-				if (isBuiltin(token.text(), Builtin::OpenParen)) {
+				} else if (isBuiltin(token.text(), Builtin::OpenParen)) {
 					tokens.eat();
 					if (tokens.empty()) {
 						p.error(token.meta(), errors::expected_expression);
@@ -444,7 +442,7 @@ struct ParserHelper {
 		}
 
 		auto token = tokens.get();
-		if (!isBuiltin(token.type())) {
+		if (token.type() != TokenType::Builtin) {
 			return parseExpressionPrimary(p, tokens);
 		}
 
@@ -485,7 +483,7 @@ struct ParserHelper {
 			}
 
 			auto token = tokens.get();
-			if (!isBuiltin(token.type())) {
+			if (token.type() != TokenType::Builtin) {
 				return lhs;
 			}
 
