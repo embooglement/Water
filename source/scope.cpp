@@ -48,23 +48,6 @@ void Scope::update(const string& identifier, shared_ptr<Value> new_value) {
 	_vars[identifier] = move(new_value);
 }
 
-void Scope::update(const shared_ptr<Value>& old_value, shared_ptr<Value> new_value) {
-	auto it = find_if(begin(_vars), end(_vars), [&old_value](const pair<const string, shared_ptr<Value>>& p) {
-		return p.second == old_value;
-	});
-
-	if (it == end(_vars)) {
-		if (_parent) {
-			_parent->update(old_value, move(new_value));
-		}
-
-		throw UndefinedVariableError("(internal)");
-	}
-
-	auto identifier = it->first;
-	_vars[identifier] = move(new_value);
-}
-
 shared_ptr<Value> Scope::get(const string& identifier) const {
 	auto it = _vars.find(identifier);
 	if (it == end(_vars)) {
