@@ -78,6 +78,7 @@ enum class Builtin {
 
 	TrueLiteral,
 	FalseLiteral,
+	NullLiteral,
 
 	FunctionDeclaration,
 	FunctionOpenArgumentList,

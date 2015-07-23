@@ -68,6 +68,7 @@ const map<Builtin, string> builtins = {
 
 	{ Builtin::TrueLiteral, "true" },
 	{ Builtin::FalseLiteral, "false" },
+	{ Builtin::NullLiteral, "null" },
 
 	{ Builtin::FunctionDeclaration, "func" },
 	{ Builtin::FunctionOpenArgumentList, "(" },

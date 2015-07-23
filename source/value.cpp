@@ -44,7 +44,7 @@ bool SentinelValue::isReturn() const {
 
 /* ===== NullValue ===== */
 
-const shared_ptr<NullValue> NullValue::_null_value;
+const shared_ptr<NullValue> NullValue::_null_value {new NullValue()};
 
 NullValue::NullValue()
 	: Value(value_type) {}

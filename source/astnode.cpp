@@ -70,6 +70,7 @@ shared_ptr<Value> StringLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
 }
 
 /* ===== BooleanLiteralNode ===== */
+
 BooleanLiteralNode::BooleanLiteralNode(const TokenMetaData& meta, bool boolean)
 	: ASTNode(meta), _boolean(boolean) {}
 
@@ -79,6 +80,19 @@ void BooleanLiteralNode::output(ostream& out, int indent) const {
 
 shared_ptr<Value> BooleanLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
 	return BooleanValue::create(_boolean);
+}
+
+/* ===== NullLiteralNode ===== */
+
+NullLiteralNode::NullLiteralNode(const TokenMetaData& meta)
+	: ASTNode(meta) {}
+
+void NullLiteralNode::output(ostream& out, int indent) const {
+	out << io::indent(indent) << "null";
+}
+
+shared_ptr<Value> NullLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
+	return NullValue::get();
 }
 
 /* ===== BinaryOperatorNode ===== */

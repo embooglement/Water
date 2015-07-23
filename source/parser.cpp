@@ -329,6 +329,10 @@ struct ParserHelper {
 					tokens.eat();
 					expr = make_shared<BooleanLiteralNode>(token.meta(), false);
 					break;
+				} else if (isBuiltin(token_text, Builtin::NullLiteral)) {
+					tokens.eat();
+					expr = make_shared<NullLiteralNode>(token.meta());
+					break;
 				} else if (isBuiltin(token_text, Builtin::FunctionDeclaration)) {
 					expr = parseFunctionDeclaration(p, tokens);
 					if (!expr) {

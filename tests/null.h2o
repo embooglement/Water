@@ -1,0 +1,7 @@
+println(null);
+
+let x = null;
+println(x);
+
+let f = func() {};
+println(f());
