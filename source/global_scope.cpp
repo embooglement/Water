@@ -79,13 +79,7 @@ void setupIOModule() {
 		auto arguments_count = arguments.size();
 
 		for (Arguments::size_type i = 0; i < arguments_count; ++i) {
-			auto&& argument = arguments[i];
-
-			if (argument) {
-				argument->output(cout);
-			} else {
-				cout << "(undefined)";
-			}
+			arguments[i]->output(cout);
 
 			if (i + 1 < arguments_count) {
 				cout << " ";
