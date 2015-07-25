@@ -162,7 +162,12 @@ bool SubscriptNode::isLValue() const {
 }
 
 void SubscriptNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
-	auto arr = _lhs->evaluate(scope);
+	auto lhs = _lhs->evaluate(scope);
+	if (lhs->type() != ValueType::Array) {
+		throw TypeError("Expression is not of type Array");
+	}
+
+	auto arr = static_pointer_cast<ArrayValue>(lhs);
 	arr->set(_index->evaluate(scope), move(rhs));
 }
 
