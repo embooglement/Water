@@ -34,7 +34,24 @@ let test_id = func() {
 	println(id(x));
 };
 
+let test_transform = func() {
+	let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+	let transform = func(count) {
+		if (count < 0) {
+			return;
+		}
+
+		arr[count] ^= 2;
+		transform(count - 1);
+	};
+
+	transform(length(arr) - 1);
+	println(arr);
+};
+
 test_bind();
 test_constant();
 test_compose();
 test_id();
+test_transform();
