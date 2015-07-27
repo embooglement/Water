@@ -6,6 +6,7 @@
 
 namespace errors {
 	// TODO: organize these errors and make them nicer
+	static const std::string expected_access_member = "expected period";
 	static const std::string expected_open_paren = "expected opening parenthesis";
 	static const std::string expected_close_paren = "expected closing parenthesis";
 	static const std::string expected_open_func_call = "expected opening parenthesis";

@@ -163,12 +163,35 @@ bool SubscriptNode::isLValue() const {
 
 void SubscriptNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
 	auto lhs = _lhs->evaluate(scope);
-	if (lhs->type() != ValueType::Array) {
-		throw TypeError("Expression is not of type Array");
-	}
+	lhs->set(_index->evaluate(scope), move(rhs));
+}
 
-	auto arr = static_pointer_cast<ArrayValue>(lhs);
-	arr->set(_index->evaluate(scope), move(rhs));
+/* ===== AccessMemberNode ===== */
+
+AccessMemberNode::AccessMemberNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> lhs, std::string member)
+	: ASTNode(meta), _lhs(move(lhs)), _member(make_shared<StringValue>(move(member))) {}
+
+bool AccessMemberNode::isLValue() const {
+	return _lhs->isLValue();
+}
+
+void AccessMemberNode::output(ostream& out, int indent) const {
+	out << io::indent(indent) << "(access" << endl;
+
+	_lhs->output(out, indent + 1);
+	out << endl << io::indent(indent + 1) << _member << endl;
+
+	out << io::indent(indent) << ")";
+}
+
+shared_ptr<Value> AccessMemberNode::evaluate(shared_ptr<Scope>& scope) const {
+	auto lhs = _lhs->evaluate(scope);
+	return lhs->get(_member);
+}
+
+void AccessMemberNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
+	auto lhs = _lhs->evaluate(scope);
+	lhs->set(_member, move(rhs));
 }
 
 /* ===== BinaryOperatorNode ===== */
@@ -312,7 +335,15 @@ FunctionCallNode::FunctionCallNode(const TokenMetaData& meta, shared_ptr<ASTNode
 
 void FunctionCallNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(";
-	_caller->output(out, 0);
+
+	auto identifier = dynamic_pointer_cast<IdentifierNode>(_caller);
+	if (identifier) {
+		identifier->output(out, 0);
+	} else {
+		out << "function call" << endl;
+		_caller->output(out, indent + 1);
+	}
+
 	out << endl;
 
 	for (auto&& argument : _arguments) {

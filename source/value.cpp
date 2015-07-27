@@ -29,6 +29,14 @@ ValueType Value::type() const {
 	return _type;
 }
 
+shared_ptr<Value> Value::get(const shared_ptr<Value>& index) const {
+	throw InterpretorError("(get not implemented)");
+}
+
+void Value::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
+	throw InterpretorError("(set not implemented)");
+}
+
 /* ===== SentinelValue ===== */
 
 SentinelValue::SentinelValue()
@@ -144,16 +152,14 @@ void ArrayValue::output(std::ostream& out) const {
 }
 
 shared_ptr<Value> ArrayValue::get(const shared_ptr<Value>& index) const {
-	if (index->type() != ValueType::Number) {
-		throw TypeError("Expression is not of type Number");
+	switch (index->type()) {
+		case ValueType::Number:
+			return getIndex(index);
+		case ValueType::String:
+			return getMember(index);
+		default:
+			throw InvalidPropertyType();
 	}
-
-	int i = toNumber(index);
-	if (i >= _elements.size()) {
-		throw OutOfBoundsError(i, _elements.size());
-	}
-
-	return _elements[i];
 }
 
 void ArrayValue::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
@@ -171,6 +177,52 @@ void ArrayValue::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value
 
 unsigned int ArrayValue::length() const {
 	return _elements.size();
+}
+
+shared_ptr<Value> ArrayValue::getIndex(const shared_ptr<Value>& index) const {
+	unsigned int i = toNumber(index);
+	if (i >= _elements.size()) {
+		throw OutOfBoundsError(i, _elements.size());
+	}
+
+	return _elements[i];
+}
+
+shared_ptr<Value> ArrayValue::getMember(const shared_ptr<Value>& index) const {
+	auto member = toString(index);
+	if (member == "length") {
+		return NumberValue::create(length());
+	} else if (member == "push") {
+		return BuiltinFunctionValue::create("push", [this](shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) mutable -> shared_ptr<Value> {
+			for (auto argument : arguments) {
+				// TODO: this is an awful hack that should be removed when values have actual prototypes
+				const_cast<ArrayValue*>(this)->_elements.push_back(argument);
+			}
+
+			return NullValue::get();
+		});
+	}
+
+	return NullValue::get();
+}
+
+void ArrayValue::setIndex(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
+	if (index->type() != ValueType::Number) {
+		throw TypeError("Expression is not of type Number");
+	}
+
+	int i = toNumber(index);
+	if (i >= _elements.size()) {
+		throw OutOfBoundsError(i, _elements.size());
+	}
+
+	_elements[i] = move(new_value);
+}
+
+void ArrayValue::setMember(const shared_ptr<Value>& member, shared_ptr<Value> new_value) {
+	std::ostringstream stream;
+	member->output(stream);
+	throw ImmutableError(stream.str());
 }
 
 /* ===== FunctionValue ===== */

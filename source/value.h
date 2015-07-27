@@ -31,15 +31,8 @@ class Value {
 public:
 	ValueType type() const;
 	virtual void output(std::ostream& out) const = 0;
-
-	// These will eventually control how types handle pseudo-properties (i.e. length on array)
-	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const {
-		throw InterpretorError("(get not implemented)");
-	}
-
-	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value) {
-		throw InterpretorError("(set not implemented)");
-	}
+	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const;
+	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
 
 	template <typename Type>
 	auto valueAs() -> decltype(std::declval<Type>().valueOf()) {
@@ -127,6 +120,11 @@ public:
 	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const override;
 	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
 	unsigned int length() const;
+protected:
+	std::shared_ptr<Value> getIndex(const std::shared_ptr<Value>& index) const;
+	std::shared_ptr<Value> getMember(const std::shared_ptr<Value>& member) const;
+	void setIndex(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
+	void setMember(const std::shared_ptr<Value>& member, std::shared_ptr<Value> new_value);
 private:
 	std::vector<std::shared_ptr<Value>> _elements;
 };

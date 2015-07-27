@@ -50,8 +50,32 @@ let test_transform = func() {
 	println(arr);
 };
 
+let test_map = func() {
+	let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+	let map = func(arr, f) {
+		let new_arr = [];
+		let count = arr.length;
+		let map_helper = func(i) {
+			if (i == count) {
+				return;
+			}
+
+			new_arr.push(f(arr[i]));
+			map_helper(i + 1);
+		};
+		
+		map_helper(0);
+		return new_arr;
+	};
+
+	let mapped_arr = map(arr, func(x) { return x ^ 2; });
+	println(mapped_arr);
+};
+
 test_bind();
 test_constant();
 test_compose();
 test_id();
 test_transform();
+test_map();

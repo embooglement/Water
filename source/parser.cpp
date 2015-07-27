@@ -506,6 +506,34 @@ struct ParserHelper {
 		return make_shared<SubscriptNode>(subscript_meta, move(lhs), move(index));
 	}
 
+	// <member-access> ::= <expr> "." <identifier>
+	static shared_ptr<ASTNode> parseAccessMember(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
+		if (tokens.empty()) {
+			p.error(lhs->meta(), errors::expected_access_member);
+			return nullptr;
+		}
+
+		auto token = tokens.get();
+		auto access_meta = token.meta();
+
+		if (!isBuiltin(token.text(), Builtin::AccessMember)) {
+			p.error(token.meta(), errors::expected_access_member);
+			return nullptr;
+		}
+
+		tokens.eat();
+		token = tokens.get();
+
+		if (token.type() != TokenType::Identifier) {
+			p.error(token.meta(), errors::expected_identifier);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		return make_shared<AccessMemberNode>(access_meta, move(lhs), token.text());
+	}
+
 	// <expr-primary> ::= <number-literal> | <string-literal> | <boolean-literal> | <function-decl> | <function-call>
 	static shared_ptr<ASTNode> parseExpressionPrimary(Parser& p, TokenStream& tokens) {
 		if (tokens.empty()) {
@@ -565,13 +593,19 @@ struct ParserHelper {
 			return expr;
 		}
 
-		token = tokens.get();
-		token_text = token.text();
+		while (tokens.hasNext()) {
+			token = tokens.get();
+			token_text = token.text();
 
-		if (isBuiltin(token.text(), Builtin::OpenFunctionCall)) {
-			expr = parseFunctionCall(p, tokens, expr);
-		} else if (isBuiltin(token_text, Builtin::OpenSubscript)) {
-			expr = parseSubscript(p, tokens, expr);
+			if (isBuiltin(token.text(), Builtin::OpenFunctionCall)) {
+				expr = parseFunctionCall(p, tokens, expr);
+			} else if (isBuiltin(token_text, Builtin::OpenSubscript)) {
+				expr = parseSubscript(p, tokens, expr);
+			} else if (isBuiltin(token_text, Builtin::AccessMember)) {
+				expr = parseAccessMember(p, tokens, expr);
+			} else {
+				break;
+			}
 		}
 
 		return expr;

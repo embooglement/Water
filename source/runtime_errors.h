@@ -36,6 +36,18 @@ public:
 		: std::runtime_error("Invalid index: " + std::to_string(index) + " for array of length " + std::to_string(length)) {}
 };
 
+class InvalidPropertyType : public std::runtime_error {
+public:
+	InvalidPropertyType()
+		: std::runtime_error("Invalid member access: type is not String") {}
+};
+
+class ImmutableError : public std::runtime_error {
+public:
+	ImmutableError(const std::string& error_identifier)
+		: std::runtime_error("Attempt to change immutable variable: " + error_identifier) {}
+};
+
 class InterpretorError : public std::runtime_error {
 public:
 	InterpretorError(const std::string& error_message)

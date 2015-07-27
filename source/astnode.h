@@ -90,6 +90,18 @@ private:
 	std::shared_ptr<ASTNode> _index;
 };
 
+class AccessMemberNode : public ASTNode {
+public:
+	AccessMemberNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> lhs, std::string member);
+	virtual bool isLValue() const override;
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
+	virtual void assign(std::shared_ptr<Scope>& scope, std::shared_ptr<Value> rhs) const override;
+private:
+	std::shared_ptr<ASTNode> _lhs;
+	std::shared_ptr<Value> _member;
+};
+
 class BinaryOperatorNode : public ASTNode {
 public:
 	BinaryOperatorNode(const TokenMetaData& meta, Builtin op, std::shared_ptr<ASTNode> left, std::shared_ptr<ASTNode> right);
