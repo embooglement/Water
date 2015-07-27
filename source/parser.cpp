@@ -175,6 +175,61 @@ struct ParserHelper {
 		return make_shared<IfStatementNode>(if_meta, condition, then_block, else_block);
 	}
 
+	// <while-statement> ::= "while" "(" <expr> ")" <block-or-statement>
+	static shared_ptr<ASTNode> parseWhileStatement(Parser& p, TokenStream& tokens) {
+		auto token = tokens.get();
+		auto while_meta = token.meta();
+
+		tokens.eat();
+
+		if (tokens.empty()) {
+			p.error(token.meta(), errors::expected_open_control_flow_condition);
+			return nullptr;
+		}
+
+		token = tokens.get();
+		if (!isBuiltin(token.text(), Builtin::OpenControlFlowCondition)) {
+			p.error(token.meta(), errors::expected_open_control_flow_condition);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		auto condition = parseExpression(p, tokens);
+		if (!condition) {
+			return nullptr;
+		}
+
+		if (tokens.empty()) {
+			p.error(condition->meta(), errors::expected_close_control_flow_condition);
+			return nullptr;
+		}
+
+		token = tokens.get();
+		if (!isBuiltin(token.text(), Builtin::CloseControlFlowCondition)) {
+			p.error(token.meta(), errors::expected_close_control_flow_condition);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		shared_ptr<ASTNode> loop_block;
+
+		token = tokens.get();
+		if (isBuiltin(token.text(), Builtin::OpenBlock)) {
+			loop_block = parseBlock(p, tokens);
+		} else {
+			loop_block = parseStatement(p, tokens);
+		}
+
+		if (!loop_block) {
+			p.error(token.meta(), errors::expected_statement);
+			return nullptr;
+		}
+
+		return make_shared<WhileStatementNode>(while_meta, move(condition), move(loop_block));
+	}
+
 	// <statement> ::= <expr>; | <declaration>; | <assignment>; | (<assignment>); | <control-statement>
 	static shared_ptr<ASTNode> parseStatement(Parser& p, TokenStream& tokens) {
 		if (tokens.empty()) {
@@ -190,6 +245,9 @@ struct ParserHelper {
 		if (isBuiltin(token_text, Builtin::IfStatement)) {
 			require_semicolon = false;
 			statement = parseIfStatement(p, tokens);
+		} else if (isBuiltin(token_text, Builtin::WhileStatement)) {
+			require_semicolon = false;
+			statement = parseWhileStatement(p, tokens);
 		} else if (isBuiltin(token_text, Builtin::VariableDeclarator) || isBuiltin(token_text, Builtin::ConstantDeclarator)) {
 			statement = parseDeclaration(p, tokens);
 		} else {

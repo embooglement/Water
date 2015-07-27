@@ -155,6 +155,16 @@ private:
 	std::shared_ptr<ASTNode> _else;
 };
 
+class WhileStatementNode : public ASTNode {
+public:
+	WhileStatementNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> condition, std::shared_ptr<ASTNode> loop_block);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
+private:
+	std::shared_ptr<ASTNode> _condition;
+	std::shared_ptr<ASTNode> _loop;
+};
+
 class DeclarationNode : public ASTNode {
 public:
 	DeclarationNode(const TokenMetaData& meta, bool is_const, std::string identifier, std::shared_ptr<ASTNode> expr);

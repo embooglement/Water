@@ -1,0 +1,10 @@
+let test_while = func() {
+	let i = 0;
+	while (i < 5) {
+		i += 1;
+	}
+
+	println(i);
+};
+
+test_while();

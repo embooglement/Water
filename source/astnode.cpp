@@ -472,6 +472,55 @@ shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 	return nullptr;
 }
 
+/* ===== WhileStatementNode ===== */
+
+WhileStatementNode::WhileStatementNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> condition, std::shared_ptr<ASTNode> loop)
+	: ASTNode(meta), _condition(move(condition)), _loop(move(loop)) {}
+
+void WhileStatementNode::output(ostream& out, int indent) const {
+	out << io::indent(indent) << "(while" << endl;
+
+	{
+		out << io::indent(indent + 1) << "(condition" << endl;
+		_condition->output(out, indent + 2);
+		out << endl << io::indent(indent + 1) << ")";
+	}
+
+	out << endl;
+
+	{
+		out << io::indent(indent + 1) << "(loop" << endl;
+		_loop->output(out, indent + 2);
+		out << endl << io::indent(indent + 1) << ")";
+	}
+
+	out << endl << io::indent(indent) << ")";
+}
+
+shared_ptr<Value> WhileStatementNode::evaluate(shared_ptr<Scope>& scope) const {
+	while (true) {
+		auto condition = _condition->evaluate(scope);
+
+		if (!condition) {
+			throw InterpretorError("condition is null");
+		}
+
+		if (condition->type() != ValueType::Boolean) {
+			throw TypeError("Condition is not of type Boolean");
+		}
+
+		bool condition_value = static_pointer_cast<BooleanValue>(condition)->valueOf();
+		if (!condition_value) {
+			break;
+		}
+
+		auto while_block_scope = scope->createNestedScope();
+		_loop->evaluate(while_block_scope);
+	}
+
+	return NullValue::get();
+}
+
 /* ===== DeclarationNode ===== */
 
 DeclarationNode::DeclarationNode(const TokenMetaData& meta, bool is_const, string identifier, shared_ptr<ASTNode> expr)
