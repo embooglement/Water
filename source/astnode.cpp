@@ -409,10 +409,7 @@ shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope>& scope) const {
 		auto val = statement->evaluate(block_scope);
 
 		if (val && val->type() == ValueType::Sentinel) {
-			auto sentinel = static_pointer_cast<SentinelValue>(val);
-			if (sentinel->isReturn()) {
-				return val;
-			}
+			return val;
 		}
 	}
 
@@ -515,7 +512,16 @@ shared_ptr<Value> WhileStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 		}
 
 		auto while_block_scope = scope->createNestedScope();
-		_loop->evaluate(while_block_scope);
+		auto val = _loop->evaluate(while_block_scope);
+
+		if (val && val->type() == ValueType::Sentinel) {
+			auto sentinel = static_pointer_cast<SentinelValue>(val);
+			if (sentinel->isBreak()) {
+				break;
+			} else if (sentinel->isContinue()) {
+				continue;
+			}
+		}
 	}
 
 	return NullValue::get();
@@ -606,11 +612,44 @@ void ReturnNode::output(ostream& out, int indent) const {
 
 shared_ptr<Value> ReturnNode::evaluate(shared_ptr<Scope>& scope) const {
 	if (_expr) {
-		auto val = _expr->evaluate(scope); // TODO: check for sentinelvalue?
-		if (val) {
-			scope->update(return_value_alias, move(val));
+		auto val = _expr->evaluate(scope);
+
+		if (!val) {
+			throw InterpretorError("No value to return");
 		}
+
+		if (val->type() == ValueType::Sentinel) {
+			throw InterpretorError("Returning sentinel value");
+		}
+
+		scope->update(return_value_alias, move(val));
 	}
 
-	return make_shared<SentinelValue>();
+	return SentinelValue::Return;
+}
+
+/* ===== BreakNode ===== */
+
+BreakNode::BreakNode(const TokenMetaData& meta)
+	: ASTNode(meta) {}
+
+void BreakNode::output(ostream& out, int indent) const {
+	out << io::indent(indent) << "(break)";
+}
+
+shared_ptr<Value> BreakNode::evaluate(shared_ptr<Scope>& scope) const {
+	return SentinelValue::Break;
+}
+
+/* ===== ContinueNode ===== */
+
+ContinueNode::ContinueNode(const TokenMetaData& meta)
+	: ASTNode(meta) {}
+
+void ContinueNode::output(ostream& out, int indent) const {
+	out << io::indent(indent) << "(continue)";
+}
+
+shared_ptr<Value> ContinueNode::evaluate(shared_ptr<Scope>& scope) const {
+	return SentinelValue::Continue;
 }

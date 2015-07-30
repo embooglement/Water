@@ -78,7 +78,9 @@ const map<Builtin, string> builtins = {
 	{ Builtin::CloseSubscript, "]" },
 	{ Builtin::ElementDelimiter, "," },
 
-	{ Builtin::WhileStatement, "while" }
+	{ Builtin::WhileStatement, "while" },
+	{ Builtin::BreakStatement, "break" },
+	{ Builtin::ContinueStatement, "continue" }
 };
 
 const int assignment_level = 0;

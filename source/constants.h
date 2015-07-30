@@ -73,6 +73,9 @@ enum class Builtin {
 	WhileStatement,
 	ForStatement,
 
+	BreakStatement,
+	ContinueStatement,
+
 	TrueLiteral,
 	FalseLiteral,
 	NullLiteral,

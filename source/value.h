@@ -52,9 +52,23 @@ private:
 class SentinelValue : public Value {
 public:
 	static const ValueType value_type = ValueType::Sentinel;
-	SentinelValue();
+	static const std::shared_ptr<SentinelValue> Return;
+	static const std::shared_ptr<SentinelValue> Break;
+	static const std::shared_ptr<SentinelValue> Continue;
+
 	virtual void output(std::ostream& out) const override;
 	bool isReturn() const;
+	bool isBreak() const;
+	bool isContinue() const;
+
+protected:
+	enum class _SentinelType {
+		Return,
+		Break,
+		Continue
+	} _type;
+
+	SentinelValue(_SentinelType);
 };
 
 class NullValue : public Value {

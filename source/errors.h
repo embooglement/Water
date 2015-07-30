@@ -32,6 +32,7 @@ namespace errors {
 	static const std::string expected_element_delimiter = "expected a comma";
 	static const std::string expected_lvalue = "expected lvalue expression";
 	static const std::string unexpected_token = "unexpected token";
+	static const std::string unexpected_loop_control_statement = "unexpected loop control statement";
 }
 
 void printError(const TokenMetaData& meta, std::string error);

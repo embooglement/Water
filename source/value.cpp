@@ -39,15 +39,27 @@ void Value::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
 
 /* ===== SentinelValue ===== */
 
-SentinelValue::SentinelValue()
-	: Value(value_type) {}
+const shared_ptr<SentinelValue> SentinelValue::Return { new SentinelValue(_SentinelType::Return) };
+const shared_ptr<SentinelValue> SentinelValue::Break { new SentinelValue(_SentinelType::Break) };
+const shared_ptr<SentinelValue> SentinelValue::Continue { new SentinelValue(_SentinelType::Continue) };
+
+SentinelValue::SentinelValue(_SentinelType type)
+	: Value(value_type), _type(type) {}
 
 void SentinelValue::output(ostream& out) const {
 	out << "(sentinel)";
 }
 
 bool SentinelValue::isReturn() const {
-	return true;
+	return _type == _SentinelType::Return;
+}
+
+bool SentinelValue::isBreak() const {
+	return _type == _SentinelType::Break;
+}
+
+bool SentinelValue::isContinue() const {
+	return _type == _SentinelType::Continue;
 }
 
 /* ===== NullValue ===== */
