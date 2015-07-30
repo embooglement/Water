@@ -7,4 +7,33 @@ let test_while = func() {
 	println(i);
 };
 
+let test_break = func() {
+	let i = 0;
+	while (true) {
+		if (i >= 5) {
+			break;
+		}
+
+		i += 1;
+	}
+
+	println(i);
+};
+
+let test_continue = func() {
+	let i = 0;
+	while (i < 100) {
+		if (i < 5) {
+			i += 1;
+			continue;
+		}
+
+		break;
+	}
+	
+	println(i);
+};
+
 test_while();
+test_break();
+test_continue();

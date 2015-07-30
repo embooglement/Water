@@ -196,4 +196,18 @@ private:
 	std::shared_ptr<ASTNode> _expr;
 };
 
+class BreakNode : public ASTNode {
+public:
+	BreakNode(const TokenMetaData& meta);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
+};
+
+class ContinueNode : public ASTNode {
+public:
+	ContinueNode(const TokenMetaData& meta);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
+};
+
 #endif

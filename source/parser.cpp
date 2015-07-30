@@ -250,6 +250,12 @@ struct ParserHelper {
 			statement = parseWhileStatement(p, tokens);
 		} else if (isBuiltin(token_text, Builtin::VariableDeclarator) || isBuiltin(token_text, Builtin::ConstantDeclarator)) {
 			statement = parseDeclaration(p, tokens);
+		} else if (isBuiltin(token_text, Builtin::BreakStatement)) {
+			tokens.eat();
+			statement = make_shared<BreakNode>(token.meta());
+		} else if (isBuiltin(token_text, Builtin::ContinueStatement)) {
+			tokens.eat();
+			statement = make_shared<ContinueNode>(token.meta());
 		} else {
 			statement = parseExpression(p, tokens);
 		}
