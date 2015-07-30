@@ -215,6 +215,8 @@ struct ParserHelper {
 
 		shared_ptr<ASTNode> loop_block;
 
+		p.pushLoopState(true);
+
 		token = tokens.get();
 		if (isBuiltin(token.text(), Builtin::OpenBlock)) {
 			loop_block = parseBlock(p, tokens);
@@ -222,12 +224,35 @@ struct ParserHelper {
 			loop_block = parseStatement(p, tokens);
 		}
 
+		p.popState();
+
 		if (!loop_block) {
 			p.error(token.meta(), errors::expected_statement);
 			return nullptr;
 		}
 
 		return make_shared<WhileStatementNode>(while_meta, move(condition), move(loop_block));
+	}
+
+	// <loop-control> ::= "break" | "continue"
+	static shared_ptr<ASTNode> parseLoopControlStatement(Parser& p, TokenStream& tokens) {
+		auto token = tokens.get();
+		auto token_text = token.text();
+
+		tokens.eat();
+
+		if (!p.inLoop()) {
+			p.error(token.meta(), errors::unexpected_loop_control_statement);
+			return nullptr;
+		}
+
+		if (isBuiltin(token_text, Builtin::BreakStatement)) {
+			return make_shared<BreakNode>(token.meta());
+		} else if (isBuiltin(token_text, Builtin::ContinueStatement)) {
+			return make_shared<ContinueNode>(token.meta());
+		}
+
+		return nullptr;
 	}
 
 	// <statement> ::= <expr>; | <declaration>; | <assignment>; | (<assignment>); | <control-statement>
@@ -250,12 +275,8 @@ struct ParserHelper {
 			statement = parseWhileStatement(p, tokens);
 		} else if (isBuiltin(token_text, Builtin::VariableDeclarator) || isBuiltin(token_text, Builtin::ConstantDeclarator)) {
 			statement = parseDeclaration(p, tokens);
-		} else if (isBuiltin(token_text, Builtin::BreakStatement)) {
-			tokens.eat();
-			statement = make_shared<BreakNode>(token.meta());
-		} else if (isBuiltin(token_text, Builtin::ContinueStatement)) {
-			tokens.eat();
-			statement = make_shared<ContinueNode>(token.meta());
+		} else if (isBuiltin(token_text, Builtin::BreakStatement) || isBuiltin(token_text, Builtin::ContinueStatement)) {
+			return parseLoopControlStatement(p, tokens);
 		} else {
 			statement = parseExpression(p, tokens);
 		}
@@ -369,7 +390,10 @@ struct ParserHelper {
 			return nullptr;
 		}
 
+		p.pushLoopState(false);
 		auto body = parseBlock(p, tokens);
+		p.popState();
+
 		return make_shared<FunctionDeclarationNode>(function_decl_meta, "", arguments, body);
 	}
 
@@ -881,3 +905,35 @@ void Parser::error(const TokenMetaData& meta, const string& error) {
 	++_error_count;
 	printError(meta, error);
 }
+
+ParserState Parser::getState() const {
+	if (_states.empty()) {
+		return ParserState::Default;
+	}
+
+	return _states.top();
+}
+
+void Parser::pushState(ParserState state) {
+	_states.push(state);
+}
+
+void Parser::popState() {
+	if (!_states.empty()) {
+		_states.pop();
+	}
+}
+
+bool Parser::inLoop() const {
+	return getState().in_loop;
+}
+
+void Parser::pushLoopState(bool in_loop) {
+	auto new_state = getState();
+	new_state.in_loop = in_loop;
+	pushState(new_state);
+}
+
+const ParserState ParserState::Default = {
+	false
+};
