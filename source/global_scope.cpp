@@ -72,6 +72,14 @@ void setupMetaModule() {
 		auto variable_name = toString(argument);
 		return BooleanValue::create(scope->contains(variable_name));
 	});
+
+	addFunctionToGlobalScope("reference_equals", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		if (arguments.size() != 2) {
+			throw InvalidArgumentsCountError("is_defined", 2, arguments.size());
+		}
+
+		return BooleanValue::create(arguments[0] == arguments[1]);
+	});
 }
 
 void setupDataStructuresModule() {

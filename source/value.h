@@ -33,6 +33,8 @@ public:
 	virtual void output(std::ostream& out) const = 0;
 	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const;
 	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
+	virtual bool isReferenceType() const = 0;
+	virtual std::shared_ptr<Value> copy() const;
 
 	template <typename Type>
 	auto valueAs() -> decltype(std::declval<Type>().valueOf()) {
@@ -57,6 +59,7 @@ public:
 	static const std::shared_ptr<SentinelValue> Continue;
 
 	virtual void output(std::ostream& out) const override;
+	virtual bool isReferenceType() const override;
 	bool isReturn() const;
 	bool isBreak() const;
 	bool isContinue() const;
@@ -79,6 +82,7 @@ public:
 	static const ValueType value_type = ValueType::Null;
 	static const std::shared_ptr<NullValue>& get();
 	virtual void output(std::ostream& out) const override;
+	virtual bool isReferenceType() const override;
 	std::nullptr_t valueOf() const;
 };
 
@@ -87,6 +91,8 @@ public:
 	static const ValueType value_type = ValueType::Number;
 	NumberValue(double number);
 	virtual void output(std::ostream& out) const override;
+	virtual bool isReferenceType() const override;
+	virtual std::shared_ptr<Value> copy() const override;
 	double valueOf() const;
 	void update(double new_value);
 
@@ -105,6 +111,7 @@ public:
 	static const ValueType value_type = ValueType::String;
 	StringValue(std::string str);
 	virtual void output(std::ostream& out) const override;
+	virtual bool isReferenceType() const override;
 	std::string valueOf() const;
 	void update(std::string new_value);
 
@@ -118,6 +125,8 @@ public:
 	static const ValueType value_type = ValueType::Boolean;
 	BooleanValue(bool boolean);
 	virtual void output(std::ostream& out) const override;
+	virtual bool isReferenceType() const override;
+	virtual std::shared_ptr<Value> copy() const override;
 	bool valueOf() const;
 	void update(bool new_value);
 
@@ -133,6 +142,7 @@ public:
 	virtual void output(std::ostream& out) const override;
 	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const override;
 	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
+	virtual bool isReferenceType() const override;
 	unsigned int length() const;
 protected:
 	std::shared_ptr<Value> getIndex(const std::shared_ptr<Value>& index) const;
@@ -145,11 +155,13 @@ private:
 
 // TODO: maybe add a EmptyArrayValue class as optimization?
 
-class FunctionValue : public Value {
+class FunctionValue : public Value, public std::enable_shared_from_this<FunctionValue> {
 public:
 	static const ValueType value_type = ValueType::Function;
 	FunctionValue(std::string identifier);
 	virtual void output(std::ostream& out) const override;
+	virtual bool isReferenceType() const override;
+	virtual std::shared_ptr<Value> copy() const override;
 	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const = 0;
 	const std::string& id() const;
 protected:
