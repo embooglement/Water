@@ -37,6 +37,10 @@ void Value::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
 	throw InterpretorError("(set not implemented)");
 }
 
+shared_ptr<Value> Value::copy() const {
+	throw InterpretorError("(copy not implemented)");
+}
+
 /* ===== SentinelValue ===== */
 
 const shared_ptr<SentinelValue> SentinelValue::Return { new SentinelValue(_SentinelType::Return) };
@@ -62,6 +66,10 @@ bool SentinelValue::isContinue() const {
 	return _type == _SentinelType::Continue;
 }
 
+bool SentinelValue::isReferenceType() const {
+	return false;
+}
+
 /* ===== NullValue ===== */
 
 const shared_ptr<NullValue> NullValue::_null_value {new NullValue()};
@@ -81,6 +89,10 @@ nullptr_t NullValue::valueOf() const {
 	return nullptr;
 }
 
+bool NullValue::isReferenceType() const {
+	return true;
+}
+
 /* ===== NumberValue ===== */
 
 NumberValue::NumberValue(double number)
@@ -88,6 +100,14 @@ NumberValue::NumberValue(double number)
 
 void NumberValue::output(ostream& out) const {
 	out << valueOf();
+}
+
+bool NumberValue::isReferenceType() const {
+	return false;
+}
+
+shared_ptr<Value> NumberValue::copy() const {
+	return NumberValue::create(valueOf());
 }
 
 double NumberValue::valueOf() const {
@@ -111,6 +131,10 @@ void StringValue::output(ostream& out) const {
 	out << valueOf();
 }
 
+bool StringValue::isReferenceType() const {
+	return true;
+}
+
 string StringValue::valueOf() const {
 	return _str;
 }
@@ -130,6 +154,14 @@ BooleanValue::BooleanValue(bool boolean)
 
 void BooleanValue::output(ostream& out) const {
 	out << (valueOf() ? "true" : "false");
+}
+
+bool BooleanValue::isReferenceType() const {
+	return false;
+}
+
+shared_ptr<Value> BooleanValue::copy() const {
+	return BooleanValue::create(valueOf());
 }
 
 bool BooleanValue::valueOf() const {
@@ -185,6 +217,10 @@ void ArrayValue::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value
 	}
 
 	_elements[i] = move(new_value);
+}
+
+bool ArrayValue::isReferenceType() const {
+	return true;
 }
 
 unsigned int ArrayValue::length() const {
@@ -244,6 +280,15 @@ FunctionValue::FunctionValue(string identifier)
 
 void FunctionValue::output(ostream& out) const {
 	out << _identifier;
+}
+
+bool FunctionValue::isReferenceType() const {
+	return false;
+}
+
+shared_ptr<Value> FunctionValue::copy() const {
+	// TODO: this is hacky, not sure how to void a const_cast in this case though
+	return const_cast<FunctionValue*>(this)->shared_from_this();
 }
 
 const string& FunctionValue::id() const {

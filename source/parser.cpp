@@ -913,7 +913,6 @@ void Parser::pushState(ParserState state) {
 
 void Parser::popState() {
 	if (!_states.empty()) {
-		auto state = getState();
 		_states.pop();
 	}
 }

@@ -1,0 +1,46 @@
+let test_null = func() {
+	let x = null;
+	let y = x;
+	println(reference_equals(x, y));
+	println(reference_equals(x, null));
+};
+
+let test_number = func() {
+	let x = 0;
+	let y = x;
+	println(reference_equals(x, y));
+};
+
+let test_string = func() {
+	let x = "Hello";
+	let y = x;
+	println(reference_equals(x, y));
+};
+
+let test_boolean = func() {
+	let x = true;
+	let y = false;
+	println(reference_equals(x, y));
+};
+
+let test_function = func() {
+	let x = func() {};
+	let y = x;
+	println(reference_equals(x, y));
+};
+
+let test_array = func() {
+	let x = [];
+	let y = x;
+	println(reference_equals(x, y));
+
+	y.push(42);
+	println(x);
+};
+
+test_null();
+test_number();
+test_string();
+test_boolean();
+test_function();
+test_array();

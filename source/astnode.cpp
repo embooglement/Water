@@ -239,7 +239,6 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 
 	switch (_op) {
 		// Assignments
-		// TODO: make these clone primitives
 		case Builtin::Assignment:
 			_left->assign(scope, move(rhs));
 			break;

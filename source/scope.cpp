@@ -13,11 +13,15 @@ void Scope::add(string identifier, shared_ptr<Value> val) {
 		throw DeclarationError(identifier);
 	}
 
-	_vars.emplace(move(identifier), move(val));
+	overshadow(move(identifier), move(val));
 }
 
 void Scope::overshadow(string identifier, shared_ptr<Value> val) {
-	_vars.emplace(move(identifier), move(val));
+	if (val->isReferenceType()) {
+		_vars.emplace(move(identifier), move(val));
+	} else {
+		_vars.emplace(move(identifier), val->copy());
+	}
 }
 
 void Scope::remove(const string& identifier) {
@@ -45,7 +49,11 @@ void Scope::update(const string& identifier, shared_ptr<Value> new_value) {
 		throw UndefinedVariableError(identifier);
 	}
 
-	_vars[identifier] = move(new_value);
+	if (new_value->isReferenceType()) {
+		_vars[identifier] = move(new_value);
+	} else {
+		_vars[identifier] = new_value->copy();
+	}
 }
 
 shared_ptr<Value> Scope::get(const string& identifier) const {
