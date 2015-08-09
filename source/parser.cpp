@@ -218,7 +218,7 @@ struct ParserHelper {
 			loop_block = parseStatement(p, tokens);
 		}
 
-		p.popState();
+		p.popLoopState();
 
 		if (!loop_block) {
 			return nullptr;
@@ -385,7 +385,7 @@ struct ParserHelper {
 
 		p.pushLoopState(false);
 		auto body = parseBlock(p, tokens);
-		p.popState();
+		p.popLoopState();
 
 		return make_shared<FunctionDeclarationNode>(function_decl_meta, "", arguments, body);
 	}
@@ -899,34 +899,16 @@ void Parser::error(const TokenMetaData& meta, const string& error) {
 	printError(meta, error);
 }
 
-ParserState Parser::getState() const {
-	if (_states.empty()) {
-		return ParserState::Default;
-	}
-
-	return _states.top();
-}
-
-void Parser::pushState(ParserState state) {
-	_states.push(state);
-}
-
-void Parser::popState() {
-	if (!_states.empty()) {
-		_states.pop();
-	}
-}
-
 bool Parser::inLoop() const {
-	return getState().in_loop;
+	return _in_loop.top();
 }
 
 void Parser::pushLoopState(bool in_loop) {
-	auto new_state = getState();
-	new_state.in_loop = in_loop;
-	pushState(new_state);
+	_in_loop.push(in_loop);
 }
 
-const ParserState ParserState::Default = {
-	false
-};
+void Parser::popLoopState() {
+	if (!_in_loop.empty()) {
+		_in_loop.pop();
+	}
+}
