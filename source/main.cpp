@@ -28,7 +28,9 @@ map<string, vector<string>> getParams(int argc, const char** argv) {
 		if (param == "-pt" || param == "--print-tokens") {
 			params["print-tokens"].push_back("true");
 		} else if (param == "-pa" || param == "--print-ast") {
-			params["print-ast"].push_back("true");
+		 	params["print-ast"].push_back("true");
+		} else if (param == "--ignore-errors" || param == "-E") {
+			params["ignore-errors"].push_back("true");
 		} else if (param == "-r") {
 			++i;
 			if (i >= argc) {
@@ -92,7 +94,9 @@ int main(int argc, const char** argv) {
 		tie(tokens, error_count) = lexer.tokenize(cin, "(stdin)");
 	}
 
-	if (error_count > 0) {
+	bool ignore_errors = paramIsSet(params, "ignore-errors");
+
+	if (!ignore_errors && error_count > 0) {
 		exit_with_errors(error_count);
 		return -1;
 	}
@@ -111,12 +115,21 @@ int main(int argc, const char** argv) {
 
 	tie(tree, error_count) = parser.parse(token_stream);
 
+	if (!ignore_errors && error_count > 0) {
+		exit_with_errors(error_count);
+		return -1;
+	}
+
 	bool print_ast = paramIsSet(params, "print-ast");
 	if (tree) {
 		if (print_ast) {
 			cout << "\nOutput: " << endl;
 			tree->output(cout, 0);
 			cout << endl;
+
+		}
+
+		if (print_ast || ignore_errors) {
 			cout << "\nEvaluate: " << endl;
 		}
 
@@ -134,11 +147,6 @@ int main(int argc, const char** argv) {
 		cout << endl;
 	} else if (print_ast) {
 		cout << "No parse tree produced" << endl;
-	}
-
-	if (error_count > 0) {
-		exit_with_errors(error_count);
-		return -1;
 	}
 
 	return 0;
