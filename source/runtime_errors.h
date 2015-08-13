@@ -12,12 +12,6 @@ public:
 		: std::runtime_error(error_message) {}
 };
 
-class DeclarationError : public std::runtime_error {
-public:
-	DeclarationError(const std::string& identifier)
-		: std::runtime_error("Invalid declaration: " + identifier + " is already declared") {}
-};
-
 class UndefinedVariableError : public std::runtime_error {
 public:
 	UndefinedVariableError(const std::string& identifier)

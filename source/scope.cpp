@@ -9,14 +9,6 @@ Scope::Scope(shared_ptr<Scope> parent)
 	: _parent(move(parent)) {}
 
 void Scope::add(string identifier, shared_ptr<Value> val) {
-	if (contains(identifier)) {
-		throw DeclarationError(identifier);
-	}
-
-	overshadow(move(identifier), move(val));
-}
-
-void Scope::overshadow(string identifier, shared_ptr<Value> val) {
 	if (val->isReferenceType()) {
 		_vars.emplace(move(identifier), move(val));
 	} else {

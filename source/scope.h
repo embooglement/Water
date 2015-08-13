@@ -8,7 +8,6 @@ class Scope : public std::enable_shared_from_this<Scope> {
 public:
 	Scope(std::shared_ptr<Scope> parent);
 	void add(std::string identifier, std::shared_ptr<Value> val);
-	void overshadow(std::string identifier, std::shared_ptr<Value> val);
 	void remove(const std::string& identifier);
 	void update(const std::string& identifier, std::shared_ptr<Value> new_value);
 	std::shared_ptr<Value> get(const std::string& identifier) const;

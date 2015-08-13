@@ -2,9 +2,11 @@
 #include <iterator>
 #include <utility>
 #include <stdexcept>
+#include <functional>
 
 #include "parser.h"
 #include "errors.h"
+#include "iohelpers.h"
 
 using namespace std;
 
@@ -43,6 +45,8 @@ struct ParserHelper {
 			}
 		}
 
+		p.pushScope();
+
 		while (true) {
 			if (tokens.empty()) {
 				break;
@@ -66,6 +70,8 @@ struct ParserHelper {
 
 			statements.push_back(move(statement));
 		}
+
+		p.popScope();
 
 		if (has_open_brace) {
 			if (tokens.empty()) {
@@ -135,6 +141,8 @@ struct ParserHelper {
 		if (isBuiltin(token.text(), Builtin::OpenBlock)) {
 			then_block = parseBlock(p, tokens);
 		} else {
+			// TODO: add scope here and for other statements
+			// TODO: maybe just refactor this whole bit into a helper
 			then_block = parseStatement(p, tokens);
 		}
 
@@ -324,8 +332,9 @@ struct ParserHelper {
 		tokens.eat();
 
 		vector<string> arguments;
-
 		bool require_identifier = false;
+
+		p.pushScope(true); // start argument scope
 
 		while (true) {
 			if (tokens.empty()) {
@@ -383,9 +392,14 @@ struct ParserHelper {
 			return nullptr;
 		}
 
+		p.pushScope(true); // start body scope
 		p.pushLoopState(false);
-		auto body = parseBlock(p, tokens);
+
+		auto body = parseBlock(p, tokens); // TODO: figure out closure scope
+
 		p.popLoopState();
+		p.popScope(); // end body scope
+		p.popScope(); // end argument scope
 
 		return make_shared<FunctionDeclarationNode>(function_decl_meta, "", arguments, body);
 	}
@@ -859,9 +873,22 @@ struct ParserHelper {
 		}
 
 		auto id = token.text();
+		auto&& scope = p.scope();
+
+		bool added_variable = scope.add(id, { is_const });
+		if (!added_variable) {
+			p.error(token.meta(), errors::redeclaration + id);
+			return nullptr;
+		}
+
 		tokens.eat();
 
 		shared_ptr<ASTNode> expr = nullptr;
+
+		if (tokens.empty() && is_const) {
+			p.error(token.meta(), errors::expected_declaration_expression);
+			return nullptr;
+		}
 
 		if (!tokens.empty()) {
 			token = tokens.get();
@@ -875,6 +902,9 @@ struct ParserHelper {
 				}
 
 				expr = parseExpression(p, tokens);
+			} else if (is_const) {
+				p.error(token.meta(), errors::expected_declaration_expression);
+				return nullptr;
 			}
 		}
 
@@ -899,6 +929,20 @@ void Parser::error(const TokenMetaData& meta, const string& error) {
 	printError(meta, error);
 }
 
+ParserScope& Parser::scope() {
+	return *_scope;
+}
+
+void Parser::pushScope(bool can_overshadow) {
+	_scope = make_shared<ParserScope>(_scope, can_overshadow);
+}
+
+void Parser::popScope() {
+	if (_scope) {
+		_scope = _scope->parent();
+	}
+}
+
 bool Parser::inLoop() const {
 	return _in_loop.top();
 }
@@ -911,4 +955,63 @@ void Parser::popLoopState() {
 	if (!_in_loop.empty()) {
 		_in_loop.pop();
 	}
+}
+
+ParserScope::ParserScope(shared_ptr<ParserScope> parent, bool can_overshadow)
+	: _parent(parent), _can_overshadow(can_overshadow) {}
+
+pair<IdentifierInfo, bool> ParserScope::get(string identifier) const {
+	auto it = _vars.find(identifier);
+	if (it != end(_vars)) {
+		return { it->second, true };
+	}
+
+	if (_parent) {
+		return _parent->get(move(identifier));
+	}
+
+	return { {}, false };
+}
+
+bool ParserScope::contains(string identifier) const {
+	return get(move(identifier)).second;
+}
+
+bool ParserScope::add(string identifier, IdentifierInfo info) {
+	function<bool(ParserScope*)> can_add = [&identifier, &can_add](ParserScope* scope) -> bool {
+		if (!scope || scope->_can_overshadow) {
+			return true;
+		}
+
+		if (scope->_vars.find(identifier) != end(scope->_vars)) {
+			return false;
+		}
+
+		return can_add(scope->parent().get());
+	};
+
+	if (can_add(this)) {
+		_vars.emplace(move(identifier), info);
+		return true;
+	}
+
+	return false;
+}
+
+shared_ptr<ParserScope> ParserScope::parent() {
+	return _parent;
+}
+
+void ParserScope::output(ostream& out, int indent) {
+	out << io::indent(indent) << "scope: " << boolalpha << _can_overshadow << endl;
+
+	for (auto p : _vars) {
+		out << io::indent(indent) << p.first << ": " << boolalpha << p.second.is_const << endl;
+	}
+
+	if (_parent) {
+		_parent->output(out, indent + 1);
+	}
+
+	out << endl;
 }

@@ -314,10 +314,10 @@ shared_ptr<Value> UserDefinedFunctionValue::call(shared_ptr<Scope>& scope, const
 
 	auto argument_scope = scope->createNestedScope();
 	for (int i = 0; i < arguments_passed_size; ++i) {
-		argument_scope->overshadow(_argument_names[i], arguments[i]);
+		argument_scope->add(_argument_names[i], arguments[i]);
 	}
 
-	argument_scope->overshadow(return_value_alias, NullValue::get());
+	argument_scope->add(return_value_alias, NullValue::get());
 	_body->evaluate(argument_scope);
 
 	return argument_scope->get(return_value_alias);
