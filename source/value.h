@@ -153,8 +153,6 @@ private:
 	std::vector<std::shared_ptr<Value>> _elements;
 };
 
-// TODO: maybe add a EmptyArrayValue class as optimization?
-
 class FunctionValue : public Value, public std::enable_shared_from_this<FunctionValue> {
 public:
 	static const ValueType value_type = ValueType::Function;

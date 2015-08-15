@@ -137,12 +137,11 @@ struct ParserHelper {
 
 		shared_ptr<ASTNode> then_block;
 
+		// TODO: refactor this whole bit into a helper
 		token = tokens.get();
 		if (isBuiltin(token.text(), Builtin::OpenBlock)) {
 			then_block = parseBlock(p, tokens);
 		} else {
-			// TODO: add scope here and for other statements
-			// TODO: maybe just refactor this whole bit into a helper
 			then_block = parseStatement(p, tokens);
 		}
 
