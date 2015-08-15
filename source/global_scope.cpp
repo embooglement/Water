@@ -6,7 +6,7 @@
 #include "value.h"
 #include "scope.h"
 #include "astnode.h"
-#include "parser.h"
+#include "parser_scope.h"
 
 using namespace std;
 
