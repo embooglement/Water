@@ -1,0 +1,5 @@
+let f = func(let x, var y, z) {
+	println(x, y, z);
+};
+
+f(1, 2, 3);

@@ -354,6 +354,25 @@ struct ParserHelper {
 				break;
 			}
 
+			bool is_const = true;
+			bool has_declaration_keyword = false;
+
+			if (isBuiltin(token.text(), Builtin::VariableDeclarator)) {
+				is_const = false;
+				has_declaration_keyword = true;
+				tokens.eat();
+			} else if (isBuiltin(token.text(), Builtin::ConstantDeclarator)) {
+				has_declaration_keyword = true;
+				tokens.eat();
+			}
+
+			if (tokens.empty()) {
+				p.error(token.meta(), errors::expected_identifier);
+				return nullptr;
+			}
+
+			token = tokens.get();
+
 			if (token.type() != TokenType::Identifier) {
 				p.error(token.meta(), errors::expected_identifier);
 				return nullptr;
@@ -364,7 +383,7 @@ struct ParserHelper {
 
 			arguments.push_back(identifier);
 			// TODO: eventually allow for let and var in argument declarations
-			scope->add(identifier, { false });
+			scope->add(identifier, { is_const });
 
 			tokens.eat();
 
