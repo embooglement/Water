@@ -9,6 +9,7 @@
 #include "token.h"
 #include "value.h"
 #include "scope.h"
+#include "parser_scope.h"
 
 class ASTNode {
 public:
@@ -16,6 +17,7 @@ public:
 	virtual ~ASTNode() {}
 	const TokenMetaData& meta() const;
 	virtual bool isLValue() const;
+	virtual bool isConst(const std::shared_ptr<ParserScope>& scope) const;
 	virtual void output(std::ostream& out, int indent = 0) const = 0;
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const;
 	virtual void assign(std::shared_ptr<Scope>& scope, std::shared_ptr<Value> rhs) const;
@@ -27,6 +29,7 @@ class IdentifierNode : public ASTNode {
 public:
 	IdentifierNode(const TokenMetaData& meta, std::string identifier);
 	virtual bool isLValue() const override;
+	virtual bool isConst(const std::shared_ptr<ParserScope>& scope) const override;
 	virtual void output(std::ostream& out, int indent = 0) const override;
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
 	virtual void assign(std::shared_ptr<Scope>& scope, std::shared_ptr<Value> rhs) const override;
@@ -82,6 +85,7 @@ class SubscriptNode : public ASTNode {
 public:
 	SubscriptNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> lhs, std::shared_ptr<ASTNode> index);
 	virtual bool isLValue() const override;
+	virtual bool isConst(const std::shared_ptr<ParserScope>& scope) const override;
 	virtual void output(std::ostream& out, int indent = 0) const override;
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
 	virtual void assign(std::shared_ptr<Scope>& scope, std::shared_ptr<Value> rhs) const override;
@@ -94,6 +98,7 @@ class AccessMemberNode : public ASTNode {
 public:
 	AccessMemberNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> lhs, std::string member);
 	virtual bool isLValue() const override;
+	virtual bool isConst(const std::shared_ptr<ParserScope>& scope) const override;
 	virtual void output(std::ostream& out, int indent = 0) const override;
 	virtual std::shared_ptr<Value> evaluate(std::shared_ptr<Scope>& scope) const override;
 	virtual void assign(std::shared_ptr<Scope>& scope, std::shared_ptr<Value> rhs) const override;

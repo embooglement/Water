@@ -18,6 +18,10 @@ bool ASTNode::isLValue() const {
 	return false;
 }
 
+bool ASTNode::isConst(const std::shared_ptr<ParserScope>& scope) const {
+	return false;
+}
+
 shared_ptr<Value> ASTNode::evaluate(shared_ptr<Scope>& scope) const {
 	throw InterpretorError("evaluate not implemented");
 }
@@ -33,6 +37,10 @@ IdentifierNode::IdentifierNode(const TokenMetaData& meta, string identifier)
 
 bool IdentifierNode::isLValue() const {
 	return true;
+}
+
+bool IdentifierNode::isConst(const std::shared_ptr<ParserScope>& scope) const {
+	return scope->get(_identifier).first.is_const;
 }
 
 void IdentifierNode::output(ostream& out, int indent) const {
@@ -161,6 +169,10 @@ bool SubscriptNode::isLValue() const {
 	return _lhs->isLValue();
 }
 
+bool SubscriptNode::isConst(const std::shared_ptr<ParserScope>& scope) const {
+	return _lhs->isConst(scope);
+}
+
 void SubscriptNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
 	auto lhs = _lhs->evaluate(scope);
 	lhs->set(_index->evaluate(scope), move(rhs));
@@ -173,6 +185,10 @@ AccessMemberNode::AccessMemberNode(const TokenMetaData& meta, std::shared_ptr<AS
 
 bool AccessMemberNode::isLValue() const {
 	return _lhs->isLValue();
+}
+
+bool AccessMemberNode::isConst(const std::shared_ptr<ParserScope>& scope) const {
+	return _lhs->isConst(scope);
 }
 
 void AccessMemberNode::output(ostream& out, int indent) const {

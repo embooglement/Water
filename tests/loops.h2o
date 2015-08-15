@@ -1,5 +1,5 @@
 let test_while = func() {
-	let i = 0;
+	var i = 0;
 	while (i < 5) {
 		i += 1;
 	}
@@ -8,7 +8,7 @@ let test_while = func() {
 };
 
 let test_break = func() {
-	let i = 0;
+	var i = 0;
 	while (true) {
 		if (i >= 5) {
 			break;
@@ -21,7 +21,7 @@ let test_break = func() {
 };
 
 let test_continue = func() {
-	let i = 0;
+	var i = 0;
 	while (i < 100) {
 		if (i < 5) {
 			i += 1;

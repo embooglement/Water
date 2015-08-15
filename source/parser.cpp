@@ -777,6 +777,11 @@ struct ParserHelper {
 					p.error(lhs->meta(), errors::expected_lvalue);
 					return nullptr;
 				}
+
+				if (lhs->isConst(p.scope())) {
+					p.error(lhs->meta(), errors::assigning_constant);
+					return nullptr;
+				}
 			}
 
 			int token_precedence = op_info.precedence;

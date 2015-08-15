@@ -36,6 +36,7 @@ namespace errors {
 	static const std::string redeclaration = "redeclaraton of variable: ";
 	static const std::string undeclared_identifier = "undeclared identifier: ";
 	static const std::string expected_declaration_expression = "constants must be assigned to when declared";
+	static const std::string assigning_constant = "left hand side is immutable, and cannot be assigned to";
 }
 
 void printError(const TokenMetaData& meta, std::string error);

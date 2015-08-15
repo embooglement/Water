@@ -1,4 +1,4 @@
-let x = 3;
+var x = 3;
 x = 4;
 println(x);
 
