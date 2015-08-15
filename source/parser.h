@@ -16,7 +16,7 @@ public:
 	std::pair<std::shared_ptr<ASTNode>, int> parse(TokenStream& tokens);
 	void error(const TokenMetaData& meta, const std::string& error);
 
-	ParserScope& scope();
+	std::shared_ptr<ParserScope> scope();
 	void pushScope(bool can_overshadow = false);
 	void popScope();
 

@@ -329,7 +329,7 @@ struct ParserHelper {
 		bool require_identifier = false;
 
 		p.pushScope(true);
-		auto&& scope = p.scope();
+		auto scope = p.scope();
 
 		while (true) {
 			if (tokens.empty()) {
@@ -364,7 +364,7 @@ struct ParserHelper {
 
 			arguments.push_back(identifier);
 			// TODO: eventually allow for let and var in argument declarations
-			scope.add(identifier, { false });
+			scope->add(identifier, { false });
 
 			tokens.eat();
 
@@ -665,7 +665,7 @@ struct ParserHelper {
 			case TokenType::Identifier: {
 				// TODO: handle closures
 				tokens.eat();
-				if (p.scope().contains(token_text)) {
+				if (p.scope()->contains(token_text)) {
 					expr = make_shared<IdentifierNode>(token.meta(), token_text);
 				} else {
 					p.error(token.meta(), errors::undeclared_identifier + token_text);
@@ -877,9 +877,9 @@ struct ParserHelper {
 		}
 
 		auto id = token.text();
-		auto&& scope = p.scope();
+		auto scope = p.scope();
 
-		bool added_variable = scope.add(id, { is_const });
+		bool added_variable = scope->add(id, { is_const });
 		if (!added_variable) {
 			p.error(token.meta(), errors::redeclaration + id);
 			return nullptr;
@@ -936,8 +936,8 @@ void Parser::error(const TokenMetaData& meta, const string& error) {
 	printError(meta, error);
 }
 
-ParserScope& Parser::scope() {
-	return *_scope;
+std::shared_ptr<ParserScope> Parser::scope() {
+	return _scope;
 }
 
 void Parser::pushScope(bool can_overshadow) {
