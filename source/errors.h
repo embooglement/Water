@@ -34,6 +34,7 @@ namespace errors {
 	static const std::string unexpected_token = "unexpected token";
 	static const std::string unexpected_loop_control_statement = "unexpected loop control statement";
 	static const std::string redeclaration = "redeclaraton of variable: ";
+	static const std::string undeclared_identifier = "undeclared identifier: ";
 	static const std::string expected_declaration_expression = "constants must be assigned to when declared";
 }
 

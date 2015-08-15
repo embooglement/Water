@@ -1,9 +1,0 @@
-let x = 123;
-
-if (is_defined("x")) {
-	println(x);
-}
-
-if (is_defined("y")) {
-	println(y);
-}

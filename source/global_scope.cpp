@@ -6,6 +6,7 @@
 #include "value.h"
 #include "scope.h"
 #include "astnode.h"
+#include "parser.h"
 
 using namespace std;
 
@@ -15,10 +16,17 @@ typedef shared_ptr<Value> ValuePtr;
 typedef shared_ptr<Scope> ScopePtr;
 typedef vector<shared_ptr<Value>> Arguments;
 
+// TODO: Fix this oh my god this is terrible, fix it
+template <typename Type>
+void addToGlobalScope(const string& identifier, IdentifierInfo info, Type&& val) {
+	ParserScope::addToGlobalScope(identifier, info);
+	Scope::addToGlobalScope(identifier, forward<Type>(val));
+}
+
 template <typename Func>
 void addFunctionToGlobalScope(const string& identifier, Func&& func) {
 	auto func_value = BuiltinFunctionValue::create(identifier, BuiltinFunctionValue::_FuncType(forward<Func>(func)));
-	Scope::addToGlobalScope(identifier, move(func_value));
+	addToGlobalScope(identifier, { true }, move(func_value));
 }
 
 template <typename Func>
@@ -138,8 +146,8 @@ void setupMathModule() {
 	// (note: these are using the long double versions of functions to avoid needing to cast)
 
 	// constants
-	Scope::addToGlobalScope("PI", NumberValue::create(M_PI));
-	Scope::addToGlobalScope("E", NumberValue::create(M_E));
+	addToGlobalScope("PI", { true }, NumberValue::create(M_PI));
+	addToGlobalScope("E", { true }, NumberValue::create(M_E));
 
 	// general
 	addUnaryMathFunctionToGlobalScope("abs", fabsl);

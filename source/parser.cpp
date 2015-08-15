@@ -334,7 +334,8 @@ struct ParserHelper {
 		vector<string> arguments;
 		bool require_identifier = false;
 
-		p.pushScope(true); // start argument scope
+		p.pushScope(true);
+		auto&& scope = p.scope();
 
 		while (true) {
 			if (tokens.empty()) {
@@ -365,8 +366,13 @@ struct ParserHelper {
 			}
 
 			require_identifier = false;
+			auto&& identifier = token.text();
+
+			arguments.push_back(identifier);
+			// TODO: eventually allow for let and var in argument declarations
+			scope.add(identifier, { false });
+
 			tokens.eat();
-			arguments.push_back(token.text());
 
 			if (tokens.empty()) {
 				p.error(token.meta(), errors::expected_close_func_declaration);
@@ -392,14 +398,12 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		p.pushScope(true); // start body scope
 		p.pushLoopState(false);
 
 		auto body = parseBlock(p, tokens); // TODO: figure out closure scope
 
 		p.popLoopState();
-		p.popScope(); // end body scope
-		p.popScope(); // end argument scope
+		p.popScope();
 
 		return make_shared<FunctionDeclarationNode>(function_decl_meta, "", arguments, body);
 	}
@@ -665,8 +669,14 @@ struct ParserHelper {
 				}
 			} break;
 			case TokenType::Identifier: {
+				// TODO: handle closures
 				tokens.eat();
-				expr = make_shared<IdentifierNode>(token.meta(), token_text);
+				if (p.scope().contains(token_text)) {
+					expr = make_shared<IdentifierNode>(token.meta(), token_text);
+				} else {
+					p.error(token.meta(), errors::undeclared_identifier + token_text);
+					return nullptr;
+				}
 			} break;
 			case TokenType::NumberLiteral: {
 				tokens.eat();
@@ -920,6 +930,9 @@ pair<shared_ptr<ASTNode>, int> Parser::parse(TokenStream& tokens) {
 		return { nullptr, 0 };
 	}
 
+	// TODO: this could probably be cleaner
+	_scope = ParserScope::getGlobalScope();
+
 	auto root = ParserHelper::parseBlock(*this, tokens, true);
 	return { root, _error_count };
 }
@@ -1015,3 +1028,13 @@ void ParserScope::output(ostream& out, int indent) {
 
 	out << endl;
 }
+
+shared_ptr<ParserScope>& ParserScope::getGlobalScope() {
+	return global_scope;
+}
+
+void ParserScope::addToGlobalScope(string identifier, IdentifierInfo info) {
+	global_scope->_vars.emplace(move(identifier), info);
+}
+
+shared_ptr<ParserScope> ParserScope::global_scope = make_shared<ParserScope>(nullptr, true);

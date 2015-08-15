@@ -113,6 +113,7 @@ int main(int argc, const char** argv) {
 	Parser parser;
 	shared_ptr<ASTNode> tree;
 
+	setupGlobalScope();
 	tie(tree, error_count) = parser.parse(token_stream);
 
 	if (!ignore_errors && error_count > 0) {
@@ -134,7 +135,6 @@ int main(int argc, const char** argv) {
 		}
 
 		try {
-			setupGlobalScope();
 			auto eval = tree->evaluate(Scope::getGlobalScope());
 			if (eval) {
 				eval->output(cout);
