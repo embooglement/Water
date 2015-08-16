@@ -2,11 +2,12 @@
 rm -r water* 
 clear
 find source/*.cpp source/*.h -type f -print0 | xargs -0 sed -i "" -E "s/[[:space:]]*$//"
-rm Makefile
 
-cmake CMakeLists.txt
+mkdir -p build && cd build
+cmake ..
 make install
 make
+cd ..
 
 if [ -n "$*" ]
 then
