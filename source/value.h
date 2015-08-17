@@ -160,7 +160,7 @@ public:
 	virtual void output(std::ostream& out) const override;
 	virtual bool isReferenceType() const override;
 	virtual std::shared_ptr<Value> copy() const override;
-	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const = 0;
+	virtual std::shared_ptr<Value> call(const std::vector<std::shared_ptr<Value>>& arguments) const = 0;
 	const std::string& id() const;
 protected:
 	std::string _identifier;
@@ -169,7 +169,7 @@ protected:
 class UserDefinedFunctionValue : public FunctionValue {
 public:
 	UserDefinedFunctionValue(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
-	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const;
+	virtual std::shared_ptr<Value> call(const std::vector<std::shared_ptr<Value>>& arguments) const;
 
 	static std::shared_ptr<UserDefinedFunctionValue> create(std::string identifier, std::vector<std::string> argument_names, std::shared_ptr<ASTNode> body);
 private:
@@ -179,9 +179,9 @@ private:
 
 class BuiltinFunctionValue : public FunctionValue {
 public:
-	typedef std::function<std::shared_ptr<Value>(std::shared_ptr<Scope>&, const std::vector<std::shared_ptr<Value>>&)> _FuncType;
+	typedef std::function<std::shared_ptr<Value>(const std::vector<std::shared_ptr<Value>>&)> _FuncType;
 	BuiltinFunctionValue(std::string identifier, const _FuncType& func);
-	virtual std::shared_ptr<Value> call(std::shared_ptr<Scope>& scope, const std::vector<std::shared_ptr<Value>>& arguments) const override;
+	virtual std::shared_ptr<Value> call(const std::vector<std::shared_ptr<Value>>& arguments) const override;
 
 	static std::shared_ptr<BuiltinFunctionValue> create(std::string identifier, const _FuncType& func);
 private:

@@ -6,32 +6,23 @@
 #include "value.h"
 #include "scope.h"
 #include "astnode.h"
-#include "parser_scope.h"
 
 using namespace std;
 
 /* ==== GlobalVars ====*/
 
 typedef shared_ptr<Value> ValuePtr;
-typedef shared_ptr<Scope> ScopePtr;
 typedef vector<shared_ptr<Value>> Arguments;
-
-// TODO: Fix this oh my god this is terrible, fix it
-template <typename Type>
-void addToGlobalScope(const string& identifier, IdentifierInfo info, Type&& val) {
-	ParserScope::addToGlobalScope(identifier, info);
-	Scope::addToGlobalScope(identifier, forward<Type>(val));
-}
 
 template <typename Func>
 void addFunctionToGlobalScope(const string& identifier, Func&& func) {
 	auto func_value = BuiltinFunctionValue::create(identifier, BuiltinFunctionValue::_FuncType(forward<Func>(func)));
-	addToGlobalScope(identifier, { true }, move(func_value));
+	Scope::addToGlobalScope(identifier, { true }, move(func_value));
 }
 
 template <typename Func>
 void addUnaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
-	addFunctionToGlobalScope(identifier, [&func, identifier](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope(identifier, [&func, identifier](const Arguments& arguments) -> ValuePtr {
 		 if (arguments.size() != 1) {
 			 throw InvalidArgumentsCountError(identifier, 1, arguments.size());
 		 }
@@ -47,7 +38,7 @@ void addUnaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 
 template <typename Func>
 void addBinaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
-	addFunctionToGlobalScope(identifier, [&func, identifier](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope(identifier, [&func, identifier](const Arguments& arguments) -> ValuePtr {
 		 if (arguments.size() != 2) {
 			 throw InvalidArgumentsCountError(identifier, 2, arguments.size());
 		 }
@@ -67,7 +58,7 @@ void addBinaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 }
 
 void setupMetaModule() {
-	addFunctionToGlobalScope("reference_equals", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("reference_equals", [](const Arguments& arguments) -> ValuePtr {
 		if (arguments.size() != 2) {
 			throw InvalidArgumentsCountError("is_defined", 2, arguments.size());
 		}
@@ -77,7 +68,7 @@ void setupMetaModule() {
 }
 
 void setupDataStructuresModule() {
-	addFunctionToGlobalScope("length", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("length", [](const Arguments& arguments) -> ValuePtr {
 		if (arguments.size() != 1) {
 			throw InvalidArgumentsCountError("length", 1, arguments.size());
 		}
@@ -93,7 +84,7 @@ void setupDataStructuresModule() {
 }
 
 void setupIOModule() {
-	addFunctionToGlobalScope("print", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("print", [](const Arguments& arguments) -> ValuePtr {
 		auto arguments_count = arguments.size();
 
 		for (Arguments::size_type i = 0; i < arguments_count; ++i) {
@@ -108,20 +99,21 @@ void setupIOModule() {
 		return nullptr;
 	});
 
-	addFunctionToGlobalScope("println", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
-		auto print = static_pointer_cast<FunctionValue>(scope->get("print"));
-		print->call(scope, arguments);
+	addFunctionToGlobalScope("println", [](const Arguments& arguments) -> ValuePtr {
+		auto scope = Scope::getGlobalScope();
+		auto print = static_pointer_cast<FunctionValue>(scope->getValue("print"));
+		print->call(arguments);
 		cout << endl;
 		return nullptr;
 	});
 
-	addFunctionToGlobalScope("read", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("read", [](const Arguments& arguments) -> ValuePtr {
 		string str;
 		cin >> str;
 		return StringValue::create(move(str));
 	});
 
-	addFunctionToGlobalScope("readln", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("readln", [](const Arguments& arguments) -> ValuePtr {
 		string str;
 		getline(cin, str);
 		return StringValue::create(move(str));
@@ -132,8 +124,8 @@ void setupMathModule() {
 	// (note: these are using the long double versions of functions to avoid needing to cast)
 
 	// constants
-	addToGlobalScope("PI", { true }, NumberValue::create(M_PI));
-	addToGlobalScope("E", { true }, NumberValue::create(M_E));
+	Scope::addToGlobalScope("PI", { true }, NumberValue::create(M_PI));
+	Scope::addToGlobalScope("E", { true }, NumberValue::create(M_E));
 
 	// general
 	addUnaryMathFunctionToGlobalScope("abs", fabsl);
@@ -177,7 +169,7 @@ void setupMathModule() {
 }
 
 void setupFunctionalModule() {
-	addFunctionToGlobalScope("bind", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("bind", [](const Arguments& arguments) -> ValuePtr {
 		if (arguments.empty()) {
 			throw InvalidArgumentsCountError("bind", 1, 0);
 		}
@@ -199,14 +191,14 @@ void setupFunctionalModule() {
 		}
 
 		auto func = static_pointer_cast<FunctionValue>(arguments[0]);
-		return BuiltinFunctionValue::create(name_stream.str(), [arguments, func](ScopePtr& scope, const Arguments& following_arguments) -> ValuePtr {
+		return BuiltinFunctionValue::create(name_stream.str(), [arguments, func](const Arguments& following_arguments) -> ValuePtr {
 			Arguments new_arguments (next(begin(arguments)), end(arguments));
 			new_arguments.insert(end(new_arguments), begin(following_arguments), end(following_arguments));
-			return func->call(scope, new_arguments);
+			return func->call(new_arguments);
 		});
 	});
 
-	addFunctionToGlobalScope("constant", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("constant", [](const Arguments& arguments) -> ValuePtr {
 		if (arguments.empty()) {
 			throw InvalidArgumentsCountError("constant", 1, 0);
 		}
@@ -216,12 +208,12 @@ void setupFunctionalModule() {
 		name_stream << "constant_";
 		constant_value->output(name_stream);
 
-		return BuiltinFunctionValue::create(name_stream.str(), [constant_value](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		return BuiltinFunctionValue::create(name_stream.str(), [constant_value](const Arguments& arguments) -> ValuePtr {
 			return constant_value;
 		});
 	});
 
-	addFunctionToGlobalScope("compose", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("compose", [](const Arguments& arguments) -> ValuePtr {
 		if (arguments.empty()) {
 			throw InvalidArgumentsCountError("compose", 1, 0);
 		}
@@ -242,14 +234,14 @@ void setupFunctionalModule() {
 			functions.push_back(move(func));
 		}
 
-		return BuiltinFunctionValue::create(name_stream.str(), [functions](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+		return BuiltinFunctionValue::create(name_stream.str(), [functions](const Arguments& arguments) -> ValuePtr {
 			vector<shared_ptr<Value>> new_arguments = arguments;
 			shared_ptr<Value> returned_value = NullValue::get();
 
 			auto end_it = functions.rend();
 			for (auto it = functions.rbegin(); it != end_it; ++it) {
 				auto&& func = *it;
-				returned_value = func->call(scope, new_arguments);
+				returned_value = func->call(new_arguments);
 				new_arguments.assign({returned_value});
 			}
 
@@ -257,7 +249,7 @@ void setupFunctionalModule() {
 		});
 	});
 
-	addFunctionToGlobalScope("id", [](ScopePtr& scope, const Arguments& arguments) -> ValuePtr {
+	addFunctionToGlobalScope("id", [](const Arguments& arguments) -> ValuePtr {
 		if (arguments.size() != 1) {
 			throw InvalidArgumentsCountError("id", 1, arguments.size());
 		}

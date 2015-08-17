@@ -1,4 +1,5 @@
 #include <cmath>
+#include <stdexcept>
 #include "astnode.h"
 #include "runtime_errors.h"
 #include "iohelpers.h"
@@ -7,52 +8,60 @@ using namespace std;
 
 /* ===== ASTNode ===== */
 
-ASTNode::ASTNode(const TokenMetaData& meta)
-	: _meta(meta) {}
+ASTNode::ASTNode(const TokenMetaData& meta, shared_ptr<Scope> scope)
+	: _meta(meta), _scope(scope) {
+		if (!_scope) {
+			throw invalid_argument("scope cannot be null");
+		}
+	}
 
 const TokenMetaData& ASTNode::meta() const {
 	return _meta;
+}
+
+shared_ptr<Scope> ASTNode::scope() const {
+	return _scope;
 }
 
 bool ASTNode::isLValue() const {
 	return false;
 }
 
-bool ASTNode::isConst(const std::shared_ptr<ParserScope>& scope) const {
+bool ASTNode::isConst(const std::shared_ptr<Scope>& scope) const {
 	return false;
 }
 
-shared_ptr<Value> ASTNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> ASTNode::evaluate() const {
 	throw InterpretorError("evaluate not implemented");
 }
 
-void ASTNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
+void ASTNode::assign(shared_ptr<Value> rhs) const {
 	throw InterpretorError("(not assignable)");
 }
 
 /* ===== IdentifierNode ===== */
 
-IdentifierNode::IdentifierNode(const TokenMetaData& meta, string identifier)
-	: ASTNode(meta), _identifier(move(identifier)) {}
+IdentifierNode::IdentifierNode(const TokenMetaData& meta, shared_ptr<Scope> scope, string identifier)
+	: ASTNode(meta, move(scope)), _identifier(move(identifier)) {}
 
 bool IdentifierNode::isLValue() const {
 	return true;
 }
 
-bool IdentifierNode::isConst(const std::shared_ptr<ParserScope>& scope) const {
-	return scope->get(_identifier).first.is_const;
+bool IdentifierNode::isConst(const std::shared_ptr<Scope>& scope) const {
+	return scope->getInfo(_identifier)->is_const;
 }
 
 void IdentifierNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << _identifier;
 }
 
-shared_ptr<Value> IdentifierNode::evaluate(shared_ptr<Scope>& scope) const {
-	return scope->get(_identifier);
+shared_ptr<Value> IdentifierNode::evaluate() const {
+	return scope()->getValue(_identifier);
 }
 
-void IdentifierNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
-	scope->update(str(), move(rhs));
+void IdentifierNode::assign(shared_ptr<Value> rhs) const {
+	scope()->setValue(str(), move(rhs));
 }
 
 const string& IdentifierNode::str() const {
@@ -61,60 +70,60 @@ const string& IdentifierNode::str() const {
 
 /* ===== NumberLiteralNode ===== */
 
-NumberLiteralNode::NumberLiteralNode(const TokenMetaData& meta, string number)
-	: ASTNode(meta), _number(stod(move(number))) {}
+NumberLiteralNode::NumberLiteralNode(const TokenMetaData& meta, shared_ptr<Scope> scope, string number)
+	: ASTNode(meta, move(scope)), _number(stod(move(number))) {}
 
 void NumberLiteralNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << _number;
 }
 
-shared_ptr<Value> NumberLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> NumberLiteralNode::evaluate() const {
 	return NumberValue::create(_number);
 }
 
 /* ===== StringLiteralNode ===== */
 
-StringLiteralNode::StringLiteralNode(const TokenMetaData& meta, string str)
-	: ASTNode(meta), _str(move(str)) {}
+StringLiteralNode::StringLiteralNode(const TokenMetaData& meta, shared_ptr<Scope> scope, string str)
+	: ASTNode(meta, move(scope)), _str(move(str)) {}
 
 void StringLiteralNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "\"" << _str << "\"";
 }
 
-shared_ptr<Value> StringLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> StringLiteralNode::evaluate() const {
 	return StringValue::create(_str);
 }
 
 /* ===== BooleanLiteralNode ===== */
 
-BooleanLiteralNode::BooleanLiteralNode(const TokenMetaData& meta, bool boolean)
-	: ASTNode(meta), _boolean(boolean) {}
+BooleanLiteralNode::BooleanLiteralNode(const TokenMetaData& meta, shared_ptr<Scope> scope, bool boolean)
+	: ASTNode(meta, move(scope)), _boolean(boolean) {}
 
 void BooleanLiteralNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << (_boolean ? "true" : "false");
 }
 
-shared_ptr<Value> BooleanLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> BooleanLiteralNode::evaluate() const {
 	return BooleanValue::create(_boolean);
 }
 
 /* ===== NullLiteralNode ===== */
 
-NullLiteralNode::NullLiteralNode(const TokenMetaData& meta)
-	: ASTNode(meta) {}
+NullLiteralNode::NullLiteralNode(const TokenMetaData& meta, shared_ptr<Scope> scope)
+	: ASTNode(meta, move(scope)) {}
 
 void NullLiteralNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "null";
 }
 
-shared_ptr<Value> NullLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> NullLiteralNode::evaluate() const {
 	return NullValue::get();
 }
 
 /* ===== ArrayLiteralNode ===== */
 
-ArrayLiteralNode::ArrayLiteralNode(const TokenMetaData& meta, vector<shared_ptr<ASTNode>> elements)
-	: ASTNode(meta), _elements(move(elements)) {}
+ArrayLiteralNode::ArrayLiteralNode(const TokenMetaData& meta, shared_ptr<Scope> scope, vector<shared_ptr<ASTNode>> elements)
+	: ASTNode(meta, move(scope)), _elements(move(elements)) {}
 
 void ArrayLiteralNode::output(ostream& out, int indent) const {
 	if (_elements.empty()) {
@@ -132,11 +141,11 @@ void ArrayLiteralNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> ArrayLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> ArrayLiteralNode::evaluate() const {
 	vector<shared_ptr<Value>> elements;
 
 	for (auto&& element_node : _elements) {
-		elements.push_back(element_node->evaluate(scope));
+		elements.push_back(element_node->evaluate());
 	}
 
 	return make_shared<ArrayValue>(move(elements));
@@ -144,8 +153,8 @@ shared_ptr<Value> ArrayLiteralNode::evaluate(shared_ptr<Scope>& scope) const {
 
 /* ===== SubscriptNode ===== */
 
-SubscriptNode::SubscriptNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> lhs, std::shared_ptr<ASTNode> index)
-	: ASTNode(meta), _lhs(move(lhs)), _index(move(index)) {}
+SubscriptNode::SubscriptNode(const TokenMetaData& meta, shared_ptr<Scope> scope, std::shared_ptr<ASTNode> lhs, std::shared_ptr<ASTNode> index)
+	: ASTNode(meta, move(scope)), _lhs(move(lhs)), _index(move(index)) {}
 
 void SubscriptNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(subscript" << endl;
@@ -155,39 +164,39 @@ void SubscriptNode::output(ostream& out, int indent) const {
 	out << endl << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> SubscriptNode::evaluate(shared_ptr<Scope>& scope) const {
-	auto lhs = _lhs->evaluate(scope);
+shared_ptr<Value> SubscriptNode::evaluate() const {
+	auto lhs = _lhs->evaluate();
 	if (lhs->type() != ValueType::Array) {
 		throw TypeError("Expression is not of type Array");
 	}
 
 	auto arr = static_pointer_cast<ArrayValue>(lhs);
-	return arr->get(_index->evaluate(scope));
+	return arr->get(_index->evaluate());
 }
 
 bool SubscriptNode::isLValue() const {
 	return _lhs->isLValue();
 }
 
-bool SubscriptNode::isConst(const std::shared_ptr<ParserScope>& scope) const {
+bool SubscriptNode::isConst(const std::shared_ptr<Scope>& scope) const {
 	return _lhs->isConst(scope);
 }
 
-void SubscriptNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
-	auto lhs = _lhs->evaluate(scope);
-	lhs->set(_index->evaluate(scope), move(rhs));
+void SubscriptNode::assign(shared_ptr<Value> rhs) const {
+	auto lhs = _lhs->evaluate();
+	lhs->set(_index->evaluate(), move(rhs));
 }
 
 /* ===== AccessMemberNode ===== */
 
-AccessMemberNode::AccessMemberNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> lhs, std::string member)
-	: ASTNode(meta), _lhs(move(lhs)), _member(make_shared<StringValue>(move(member))) {}
+AccessMemberNode::AccessMemberNode(const TokenMetaData& meta, shared_ptr<Scope> scope, std::shared_ptr<ASTNode> lhs, std::string member)
+	: ASTNode(meta, move(scope)), _lhs(move(lhs)), _member(make_shared<StringValue>(move(member))) {}
 
 bool AccessMemberNode::isLValue() const {
 	return _lhs->isLValue();
 }
 
-bool AccessMemberNode::isConst(const std::shared_ptr<ParserScope>& scope) const {
+bool AccessMemberNode::isConst(const std::shared_ptr<Scope>& scope) const {
 	return _lhs->isConst(scope);
 }
 
@@ -200,20 +209,20 @@ void AccessMemberNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> AccessMemberNode::evaluate(shared_ptr<Scope>& scope) const {
-	auto lhs = _lhs->evaluate(scope);
+shared_ptr<Value> AccessMemberNode::evaluate() const {
+	auto lhs = _lhs->evaluate();
 	return lhs->get(_member);
 }
 
-void AccessMemberNode::assign(shared_ptr<Scope>& scope, shared_ptr<Value> rhs) const {
-	auto lhs = _lhs->evaluate(scope);
+void AccessMemberNode::assign(shared_ptr<Value> rhs) const {
+	auto lhs = _lhs->evaluate();
 	lhs->set(_member, move(rhs));
 }
 
 /* ===== BinaryOperatorNode ===== */
 
-BinaryOperatorNode::BinaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> left, shared_ptr<ASTNode> right)
-	: ASTNode(meta), _op(op), _left(move(left)), _right(move(right)) {}
+BinaryOperatorNode::BinaryOperatorNode(const TokenMetaData& meta, shared_ptr<Scope> scope, Builtin op, shared_ptr<ASTNode> left, shared_ptr<ASTNode> right)
+	: ASTNode(meta, move(scope)), _op(op), _left(move(left)), _right(move(right)) {}
 
 void BinaryOperatorNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(" << getBuiltinString(_op) << "\n";
@@ -226,20 +235,20 @@ void BinaryOperatorNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> BinaryOperatorNode::evaluate() const {
 	// Short circuit evaluate logical operators
 	switch (_op) {
 		case Builtin::LogicalAnd:
-			if (toBoolean(_left->evaluate(scope))) {
-				return BooleanValue::create(toBoolean(_right->evaluate(scope)));
+			if (toBoolean(_left->evaluate())) {
+				return BooleanValue::create(toBoolean(_right->evaluate()));
 			} else {
 				return BooleanValue::create(false);
 			}
 		case Builtin::LogicalOr:
-			if (toBoolean(_left->evaluate(scope))) {
+			if (toBoolean(_left->evaluate())) {
 				return BooleanValue::create(true);
 			} else {
-				return BooleanValue::create(toBoolean(_right->evaluate(scope)));
+				return BooleanValue::create(toBoolean(_right->evaluate()));
 			}
 		default:
 			break;
@@ -250,31 +259,31 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 	auto multiply = [](double x, double y) { return x * y; };
 	auto divide = [](double x, double y) { return x / y; };
 
-	auto lhs = _left->evaluate(scope);
-	auto rhs = _right->evaluate(scope);
+	auto lhs = _left->evaluate();
+	auto rhs = _right->evaluate();
 
 	switch (_op) {
 		// Assignments
 		case Builtin::Assignment:
-			_left->assign(scope, move(rhs));
+			_left->assign(move(rhs));
 			break;
 		case Builtin::AdditionAssignment:
-			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, add));
+			_left->assign(NumberValue::applyOperator(lhs, rhs, add));
 			break;
 		case Builtin::SubtractionAssignment:
-			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, subtract));
+			_left->assign(NumberValue::applyOperator(lhs, rhs, subtract));
 			break;
 		case Builtin::MultiplicationAssignment:
-			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, multiply));
+			_left->assign(NumberValue::applyOperator(lhs, rhs, multiply));
 			break;
 		case Builtin::DivisionAssignment:
-			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, divide));
+			_left->assign(NumberValue::applyOperator(lhs, rhs, divide));
 			break;
 		case Builtin::ModulusAssignment:
-			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, fmodl));
+			_left->assign(NumberValue::applyOperator(lhs, rhs, fmodl));
 			break;
 		case Builtin::ExponentAssignment:
-			_left->assign(scope, NumberValue::applyOperator(lhs, rhs, powl));
+			_left->assign(NumberValue::applyOperator(lhs, rhs, powl));
 			break;
 
 		// Arithmetic
@@ -314,8 +323,8 @@ shared_ptr<Value> BinaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 
 /* ===== UnaryOperatorNode ===== */
 
-UnaryOperatorNode::UnaryOperatorNode(const TokenMetaData& meta, Builtin op, shared_ptr<ASTNode> expr)
-	: ASTNode(meta), _op(op), _expr(move(expr)) {}
+UnaryOperatorNode::UnaryOperatorNode(const TokenMetaData& meta, shared_ptr<Scope> scope, Builtin op, shared_ptr<ASTNode> expr)
+	: ASTNode(meta, move(scope)), _op(op), _expr(move(expr)) {}
 
 void UnaryOperatorNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(" << getBuiltinString(_op) << "\n";
@@ -326,8 +335,8 @@ void UnaryOperatorNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> UnaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
-	auto expr = _expr->evaluate(scope);
+shared_ptr<Value> UnaryOperatorNode::evaluate() const {
+	auto expr = _expr->evaluate();
 
 	switch (_op) {
 		// Arithmetic
@@ -345,8 +354,8 @@ shared_ptr<Value> UnaryOperatorNode::evaluate(shared_ptr<Scope>& scope) const {
 
 /* ===== FunctionCallNode ===== */
 
-FunctionCallNode::FunctionCallNode(const TokenMetaData& meta, shared_ptr<ASTNode> caller, vector<shared_ptr<ASTNode>> arguments)
-	: ASTNode(meta), _caller(move(caller)), _arguments(move(arguments)) {}
+FunctionCallNode::FunctionCallNode(const TokenMetaData& meta, shared_ptr<Scope> scope, shared_ptr<ASTNode> caller, vector<shared_ptr<ASTNode>> arguments)
+	: ASTNode(meta, move(scope)), _caller(move(caller)), _arguments(move(arguments)) {}
 
 void FunctionCallNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(";
@@ -369,8 +378,8 @@ void FunctionCallNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> FunctionCallNode::evaluate(shared_ptr<Scope>& scope) const {
-	auto caller = _caller->evaluate(scope);
+shared_ptr<Value> FunctionCallNode::evaluate() const {
+	auto caller = _caller->evaluate();
 	if (caller->type() != ValueType::Function) {
 		throw TypeError("Expression is not of type Function");
 	}
@@ -379,16 +388,16 @@ shared_ptr<Value> FunctionCallNode::evaluate(shared_ptr<Scope>& scope) const {
 	vector<shared_ptr<Value>> arguments;
 
 	for (auto&& argument_node : _arguments) {
-		arguments.push_back(argument_node->evaluate(scope));
+		arguments.push_back(argument_node->evaluate());
 	}
 
-	return func->call(scope, move(arguments));
+	return func->call(move(arguments));
 }
 
 /* ===== BlockNode ===== */
 
-BlockNode::BlockNode(const TokenMetaData& meta, bool is_new_scope, vector<shared_ptr<ASTNode>> statements)
-	: ASTNode(meta), _is_new_scope(is_new_scope), _statements(move(statements)) {}
+BlockNode::BlockNode(const TokenMetaData& meta, shared_ptr<Scope> scope, bool is_new_scope, vector<shared_ptr<ASTNode>> statements)
+	: ASTNode(meta, move(scope)), _is_new_scope(is_new_scope), _statements(move(statements)) {}
 
 bool BlockNode::isNewScope() const {
 	return _is_new_scope;
@@ -411,17 +420,9 @@ void BlockNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope>& scope) const {
-	shared_ptr<Scope> block_scope;
-
-	if (isNewScope()) {
-		block_scope = scope->createNestedScope();
-	} else {
-		block_scope = scope;
-	}
-
+shared_ptr<Value> BlockNode::evaluate() const {
 	for (auto&& statement : _statements) {
-		auto val = statement->evaluate(block_scope);
+		auto val = statement->evaluate();
 
 		if (val && val->type() == ValueType::Sentinel) {
 			return val;
@@ -433,8 +434,8 @@ shared_ptr<Value> BlockNode::evaluate(shared_ptr<Scope>& scope) const {
 
 /* ===== IfStatementNode ===== */
 
-IfStatementNode::IfStatementNode(const TokenMetaData& meta, shared_ptr<ASTNode> condition, shared_ptr<ASTNode> then_statement, shared_ptr<ASTNode> else_statement)
-	: ASTNode(meta), _condition(move(condition)), _then(move(then_statement)), _else(move(else_statement)) {}
+IfStatementNode::IfStatementNode(const TokenMetaData& meta, shared_ptr<Scope> scope, shared_ptr<ASTNode> condition, shared_ptr<ASTNode> then_statement, shared_ptr<ASTNode> else_statement)
+	: ASTNode(meta, move(scope)), _condition(move(condition)), _then(move(then_statement)), _else(move(else_statement)) {}
 
 void IfStatementNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(if" << endl;
@@ -463,8 +464,8 @@ void IfStatementNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope>& scope) const {
-	auto condition = _condition->evaluate(scope);
+shared_ptr<Value> IfStatementNode::evaluate() const {
+	auto condition = _condition->evaluate();
 	if (!condition) {
 		throw InterpretorError("condition is null");
 	}
@@ -473,12 +474,11 @@ shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 		throw TypeError("Condition is not of type Boolean");
 	}
 
-	auto if_block_scope = scope->createNestedScope();
 	bool condition_value = static_pointer_cast<BooleanValue>(condition)->valueOf();
 	if (condition_value) {
-		return _then->evaluate(if_block_scope);
+		return _then->evaluate();
 	} else if (_else) {
-		return _else->evaluate(if_block_scope);
+		return _else->evaluate();
 	}
 
 	return nullptr;
@@ -486,8 +486,8 @@ shared_ptr<Value> IfStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 
 /* ===== WhileStatementNode ===== */
 
-WhileStatementNode::WhileStatementNode(const TokenMetaData& meta, std::shared_ptr<ASTNode> condition, std::shared_ptr<ASTNode> loop)
-	: ASTNode(meta), _condition(move(condition)), _loop(move(loop)) {}
+WhileStatementNode::WhileStatementNode(const TokenMetaData& meta, shared_ptr<Scope> scope, std::shared_ptr<ASTNode> condition, std::shared_ptr<ASTNode> loop)
+	: ASTNode(meta, move(scope)), _condition(move(condition)), _loop(move(loop)) {}
 
 void WhileStatementNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(while" << endl;
@@ -509,9 +509,9 @@ void WhileStatementNode::output(ostream& out, int indent) const {
 	out << endl << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> WhileStatementNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> WhileStatementNode::evaluate() const {
 	while (true) {
-		auto condition = _condition->evaluate(scope);
+		auto condition = _condition->evaluate();
 
 		if (!condition) {
 			throw InterpretorError("condition is null");
@@ -526,8 +526,7 @@ shared_ptr<Value> WhileStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 			break;
 		}
 
-		auto while_block_scope = scope->createNestedScope();
-		auto val = _loop->evaluate(while_block_scope);
+		auto val = _loop->evaluate();
 
 		if (val && val->type() == ValueType::Sentinel) {
 			auto sentinel = static_pointer_cast<SentinelValue>(val);
@@ -544,8 +543,8 @@ shared_ptr<Value> WhileStatementNode::evaluate(shared_ptr<Scope>& scope) const {
 
 /* ===== DeclarationNode ===== */
 
-DeclarationNode::DeclarationNode(const TokenMetaData& meta, bool is_const, string identifier, shared_ptr<ASTNode> expr)
-	: ASTNode(meta), _is_const(is_const), _identifier(move(identifier)), _expr(move(expr)) {}
+DeclarationNode::DeclarationNode(const TokenMetaData& meta, shared_ptr<Scope> scope, bool is_const, string identifier, shared_ptr<ASTNode> expr)
+	: ASTNode(meta, move(scope)), _is_const(is_const), _identifier(move(identifier)), _expr(move(expr)) {}
 
 void DeclarationNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(decl ";
@@ -562,9 +561,9 @@ void DeclarationNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> DeclarationNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> DeclarationNode::evaluate() const {
 	if (_expr) {
-		scope->add(_identifier, _expr->evaluate(scope));
+		scope()->setValue(_identifier, _expr->evaluate());
 	}
 
 	return nullptr;
@@ -572,8 +571,8 @@ shared_ptr<Value> DeclarationNode::evaluate(shared_ptr<Scope>& scope) const {
 
 /* ===== FunctionDeclarationNode ===== */
 
-FunctionDeclarationNode::FunctionDeclarationNode(const TokenMetaData& meta, string identifier, vector<string> argument_names, shared_ptr<ASTNode> body)
-	: ASTNode(meta), _identifier(move(identifier)), _argument_names(move(argument_names)), _body(move(body)) {}
+FunctionDeclarationNode::FunctionDeclarationNode(const TokenMetaData& meta, shared_ptr<Scope> scope, string identifier, vector<string> argument_names, shared_ptr<ASTNode> body)
+	: ASTNode(meta, move(scope)), _identifier(move(identifier)), _argument_names(move(argument_names)), _body(move(body)) {}
 
 void FunctionDeclarationNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(decl func";
@@ -602,14 +601,14 @@ void FunctionDeclarationNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> FunctionDeclarationNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> FunctionDeclarationNode::evaluate() const {
 	return UserDefinedFunctionValue::create(_identifier, _argument_names, _body);
 }
 
 /* ===== ReturnNode ===== */
 
-ReturnNode::ReturnNode(const TokenMetaData& meta, shared_ptr<ASTNode> expr)
-	: ASTNode(meta), _expr(move(expr)) {}
+ReturnNode::ReturnNode(const TokenMetaData& meta, shared_ptr<Scope> scope, shared_ptr<ASTNode> expr)
+	: ASTNode(meta, move(scope)), _expr(move(expr)) {}
 
 void ReturnNode::output(ostream& out, int indent) const {
 	if (!_expr) {
@@ -625,9 +624,9 @@ void ReturnNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << ")";
 }
 
-shared_ptr<Value> ReturnNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> ReturnNode::evaluate() const {
 	if (_expr) {
-		auto val = _expr->evaluate(scope);
+		auto val = _expr->evaluate();
 
 		if (!val) {
 			throw InterpretorError("No value to return");
@@ -637,7 +636,7 @@ shared_ptr<Value> ReturnNode::evaluate(shared_ptr<Scope>& scope) const {
 			throw InterpretorError("Returning sentinel value");
 		}
 
-		scope->update(return_value_alias, move(val));
+		scope()->setValue(return_value_alias, move(val));
 	}
 
 	return SentinelValue::Return;
@@ -645,26 +644,26 @@ shared_ptr<Value> ReturnNode::evaluate(shared_ptr<Scope>& scope) const {
 
 /* ===== BreakNode ===== */
 
-BreakNode::BreakNode(const TokenMetaData& meta)
-	: ASTNode(meta) {}
+BreakNode::BreakNode(const TokenMetaData& meta, shared_ptr<Scope> scope)
+	: ASTNode(meta, move(scope)) {}
 
 void BreakNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(break)";
 }
 
-shared_ptr<Value> BreakNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> BreakNode::evaluate() const {
 	return SentinelValue::Break;
 }
 
 /* ===== ContinueNode ===== */
 
-ContinueNode::ContinueNode(const TokenMetaData& meta)
-	: ASTNode(meta) {}
+ContinueNode::ContinueNode(const TokenMetaData& meta, shared_ptr<Scope> scope)
+	: ASTNode(meta, move(scope)) {}
 
 void ContinueNode::output(ostream& out, int indent) const {
 	out << io::indent(indent) << "(continue)";
 }
 
-shared_ptr<Value> ContinueNode::evaluate(shared_ptr<Scope>& scope) const {
+shared_ptr<Value> ContinueNode::evaluate() const {
 	return SentinelValue::Continue;
 }

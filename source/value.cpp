@@ -241,7 +241,7 @@ shared_ptr<Value> ArrayValue::getMember(const shared_ptr<Value>& index) const {
 	if (member == "length") {
 		return NumberValue::create(length());
 	} else if (member == "push") {
-		return BuiltinFunctionValue::create("push", [this](shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) mutable -> shared_ptr<Value> {
+		return BuiltinFunctionValue::create("push", [this](const vector<shared_ptr<Value>>& arguments) mutable -> shared_ptr<Value> {
 			for (auto argument : arguments) {
 				// TODO: this is an awful hack that should be removed when values have actual prototypes
 				const_cast<ArrayValue*>(this)->_elements.push_back(argument);
@@ -304,7 +304,7 @@ UserDefinedFunctionValue::UserDefinedFunctionValue(string identifier, vector<str
 	}
 }
 
-shared_ptr<Value> UserDefinedFunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
+shared_ptr<Value> UserDefinedFunctionValue::call(const vector<shared_ptr<Value>>& arguments) const {
 	int arguments_passed_size = arguments.size();
 	int arguments_expected_size = _argument_names.size();
 
@@ -312,15 +312,16 @@ shared_ptr<Value> UserDefinedFunctionValue::call(shared_ptr<Scope>& scope, const
 		throw InvalidArgumentsCountError(id(), arguments_expected_size, arguments_passed_size);
 	}
 
-	auto argument_scope = scope->createNestedScope();
+	auto scope = _body->scope();
+
 	for (int i = 0; i < arguments_passed_size; ++i) {
-		argument_scope->add(_argument_names[i], arguments[i]);
+		scope->setValue(_argument_names[i], arguments[i]);
 	}
 
-	argument_scope->add(return_value_alias, NullValue::get());
-	_body->evaluate(argument_scope);
+	scope->setValue(return_value_alias, NullValue::get());
+	_body->evaluate();
 
-	return argument_scope->get(return_value_alias);
+	return scope->getValue(return_value_alias);
 }
 
 shared_ptr<UserDefinedFunctionValue> UserDefinedFunctionValue::create(string identifier, vector<string> argument_names, shared_ptr<ASTNode> body) {
@@ -332,8 +333,8 @@ shared_ptr<UserDefinedFunctionValue> UserDefinedFunctionValue::create(string ide
 BuiltinFunctionValue::BuiltinFunctionValue(string identifier, const BuiltinFunctionValue::_FuncType& func)
 	: FunctionValue(move(identifier)), _func(move(func)) {}
 
-shared_ptr<Value> BuiltinFunctionValue::call(shared_ptr<Scope>& scope, const vector<shared_ptr<Value>>& arguments) const {
-	return _func(scope, arguments);
+shared_ptr<Value> BuiltinFunctionValue::call(const vector<shared_ptr<Value>>& arguments) const {
+	return _func(arguments);
 }
 
 shared_ptr<BuiltinFunctionValue> BuiltinFunctionValue::create(string identifier, const BuiltinFunctionValue::_FuncType& func) {

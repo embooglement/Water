@@ -41,6 +41,7 @@ struct ParserHelper {
 		}
 
 		p.pushScope();
+		auto scope = p.scope();
 
 		while (true) {
 			if (tokens.empty()) {
@@ -84,7 +85,7 @@ struct ParserHelper {
 			tokens.eat();
 		}
 
-		return make_shared<BlockNode>(block_meta, has_open_brace, statements);
+		return make_shared<BlockNode>(block_meta, scope, has_open_brace, statements);
 	}
 
 	// <if-statement> ::= "if" "(" <expr> ")" <block-or-statement> ["else" <block-or-statement>]
@@ -146,12 +147,12 @@ struct ParserHelper {
 		}
 
 		if (tokens.empty()) {
-			return make_shared<IfStatementNode>(if_meta, condition, then_block, nullptr);
+			return make_shared<IfStatementNode>(if_meta, p.scope(), condition, then_block, nullptr);
 		}
 
 		token = tokens.get();
 		if (!isBuiltin(token.text(), Builtin::ElseStatement)) {
-			return make_shared<IfStatementNode>(if_meta, condition, then_block, nullptr);
+			return make_shared<IfStatementNode>(if_meta, p.scope(), condition, then_block, nullptr);
 		}
 
 		tokens.eat();
@@ -169,7 +170,7 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		return make_shared<IfStatementNode>(if_meta, condition, then_block, else_block);
+		return make_shared<IfStatementNode>(if_meta, p.scope(), condition, then_block, else_block);
 	}
 
 	// <while-statement> ::= "while" "(" <expr> ")" <block-or-statement>
@@ -226,7 +227,7 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		return make_shared<WhileStatementNode>(while_meta, move(condition), move(loop_block));
+		return make_shared<WhileStatementNode>(while_meta, p.scope(), move(condition), move(loop_block));
 	}
 
 	// <loop-control> ::= "break" | "continue"
@@ -242,9 +243,9 @@ struct ParserHelper {
 		}
 
 		if (isBuiltin(token_text, Builtin::BreakStatement)) {
-			return make_shared<BreakNode>(token.meta());
+			return make_shared<BreakNode>(token.meta(), p.scope());
 		} else if (isBuiltin(token_text, Builtin::ContinueStatement)) {
-			return make_shared<ContinueNode>(token.meta());
+			return make_shared<ContinueNode>(token.meta(), p.scope());
 		}
 
 		return nullptr;
@@ -416,9 +417,11 @@ struct ParserHelper {
 		auto body = parseBlock(p, tokens); // TODO: figure out closure scope
 
 		p.popLoopState();
+
+		scope->add(return_value_alias, { false });
 		p.popScope();
 
-		return make_shared<FunctionDeclarationNode>(function_decl_meta, "", arguments, body);
+		return make_shared<FunctionDeclarationNode>(function_decl_meta, move(scope), "", arguments, body);
 	}
 
 	// <paren-expr> ::= "(" <expr> ")"
@@ -511,7 +514,7 @@ struct ParserHelper {
 		}
 
 		tokens.eat();
-		return make_shared<FunctionCallNode>(call_meta, lhs, arguments);
+		return make_shared<FunctionCallNode>(call_meta, p.scope(), lhs, arguments);
 	}
 
 	// <array-literal> ::= "[" <expr>,* "]"
@@ -569,7 +572,7 @@ struct ParserHelper {
 		}
 
 		tokens.eat();
-		return make_shared<ArrayLiteralNode>(array_meta, move(elements));
+		return make_shared<ArrayLiteralNode>(array_meta, p.scope(), move(elements));
 	}
 
 	// <subscript-expr> ::= <expr> "[" <expr> "]"
@@ -615,7 +618,7 @@ struct ParserHelper {
 		}
 
 		tokens.eat();
-		return make_shared<SubscriptNode>(subscript_meta, move(lhs), move(index));
+		return make_shared<SubscriptNode>(subscript_meta, p.scope(), move(lhs), move(index));
 	}
 
 	// <member-access> ::= <expr> "." <identifier>
@@ -643,7 +646,7 @@ struct ParserHelper {
 
 		tokens.eat();
 
-		return make_shared<AccessMemberNode>(access_meta, move(lhs), token.text());
+		return make_shared<AccessMemberNode>(access_meta, p.scope(), move(lhs), token.text());
 	}
 
 	// <expr-primary> ::= <number-literal> | <string-literal> | <boolean-literal> | <function-decl> | <function-call>
@@ -660,13 +663,13 @@ struct ParserHelper {
 			case TokenType::Builtin: {
 				if (isBuiltin(token_text, Builtin::TrueLiteral)) {
 					tokens.eat();
-					expr = make_shared<BooleanLiteralNode>(token.meta(), true);
+					expr = make_shared<BooleanLiteralNode>(token.meta(), p.scope(), true);
 				} else if (isBuiltin(token_text, Builtin::FalseLiteral)) {
 					tokens.eat();
-					expr = make_shared<BooleanLiteralNode>(token.meta(), false);
+					expr = make_shared<BooleanLiteralNode>(token.meta(), p.scope(), false);
 				} else if (isBuiltin(token_text, Builtin::NullLiteral)) {
 					tokens.eat();
-					expr = make_shared<NullLiteralNode>(token.meta());
+					expr = make_shared<NullLiteralNode>(token.meta(), p.scope());
 				} else if (isBuiltin(token_text, Builtin::FunctionDeclaration)) {
 					expr = parseFunctionDeclaration(p, tokens);
 				} else if (isBuiltin(token_text, Builtin::Return)) {
@@ -674,7 +677,7 @@ struct ParserHelper {
 					tokens.eat();
 
 					auto rhs = parseExpression(p, tokens);
-					expr = make_shared<ReturnNode>(return_meta, rhs);
+					expr = make_shared<ReturnNode>(return_meta, p.scope(), rhs);
 				} else if (isBuiltin(token_text, Builtin::OpenParen)) {
 					expr = parseParenthesesExpression(p, tokens);
 				} else if (isBuiltin(token_text, Builtin::OpenArrayLiteral)) {
@@ -685,7 +688,7 @@ struct ParserHelper {
 				// TODO: handle closures
 				tokens.eat();
 				if (p.scope()->contains(token_text)) {
-					expr = make_shared<IdentifierNode>(token.meta(), token_text);
+					expr = make_shared<IdentifierNode>(token.meta(), p.scope(), token_text);
 				} else {
 					p.error(token.meta(), errors::undeclared_identifier + token_text);
 					return nullptr;
@@ -693,11 +696,11 @@ struct ParserHelper {
 			} break;
 			case TokenType::NumberLiteral: {
 				tokens.eat();
-				expr = make_shared<NumberLiteralNode>(token.meta(), token_text);
+				expr = make_shared<NumberLiteralNode>(token.meta(), p.scope(), token_text);
 			} break;
 			case TokenType::StringLiteral: {
 				tokens.eat();
-				expr = make_shared<StringLiteralNode>(token.meta(), token_text);
+				expr = make_shared<StringLiteralNode>(token.meta(), p.scope(), token_text);
 			} break;
 			default:
 				break;
@@ -762,7 +765,7 @@ struct ParserHelper {
 			auto expr = parseUnaryOperator(p, tokens, nullptr);
 			expr = parseBinaryOperator(p, tokens, expr, op_info.precedence);
 
-			return make_shared<UnaryOperatorNode>(token.meta(), op, expr);
+			return make_shared<UnaryOperatorNode>(token.meta(), p.scope(), op, expr);
 		} else {
 			// TODO: postfix operators
 			return nullptr;
@@ -853,7 +856,7 @@ struct ParserHelper {
 				}
 			}
 
-			lhs = make_shared<BinaryOperatorNode>(token.meta(), op, lhs, rhs);
+			lhs = make_shared<BinaryOperatorNode>(token.meta(), p.scope(), op, lhs, rhs);
 		}
 	}
 
@@ -936,7 +939,7 @@ struct ParserHelper {
 			}
 		}
 
-		return make_shared<DeclarationNode>(declaration_meta, is_const, id, expr);
+		return make_shared<DeclarationNode>(declaration_meta, move(scope), is_const, id, expr);
 	}
 };
 
@@ -949,7 +952,7 @@ pair<shared_ptr<ASTNode>, int> Parser::parse(TokenStream& tokens) {
 	}
 
 	// TODO: this could probably be cleaner
-	_scope = ParserScope::getGlobalScope();
+	_scope = Scope::getGlobalScope();
 
 	auto root = ParserHelper::parseBlock(*this, tokens, true);
 	return { root, _error_count };
@@ -960,12 +963,12 @@ void Parser::error(const TokenMetaData& meta, const string& error) {
 	printError(meta, error);
 }
 
-std::shared_ptr<ParserScope> Parser::scope() {
+std::shared_ptr<Scope> Parser::scope() {
 	return _scope;
 }
 
 void Parser::pushScope(bool can_overshadow) {
-	_scope = make_shared<ParserScope>(_scope, can_overshadow);
+	_scope = make_shared<Scope>(_scope, can_overshadow);
 }
 
 void Parser::popScope() {
