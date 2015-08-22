@@ -356,14 +356,11 @@ struct ParserHelper {
 			}
 
 			bool is_const = true;
-			bool has_declaration_keyword = false;
 
 			if (isBuiltin(token.text(), Builtin::VariableDeclarator)) {
 				is_const = false;
-				has_declaration_keyword = true;
 				tokens.eat();
 			} else if (isBuiltin(token.text(), Builtin::ConstantDeclarator)) {
-				has_declaration_keyword = true;
 				tokens.eat();
 			}
 
