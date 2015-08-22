@@ -14,7 +14,7 @@ struct IdentifierInfo {
 
 class Scope {
 public:
-	Scope(std::shared_ptr<Scope> parent, bool can_overshadow = false);
+	Scope(std::shared_ptr<Scope> parent, bool is_function_scope = false);
 	std::tuple<IdentifierInfo, std::shared_ptr<Value>> get(const std::string& identifier) const;
 	boost::optional<IdentifierInfo> getInfo(const std::string& identifier) const;
 	std::shared_ptr<Value> getValue(const std::string& identifier) const;
@@ -22,12 +22,13 @@ public:
 	bool contains(const std::string& identifier) const;
 	bool add(std::string identifier, IdentifierInfo info);
 	std::shared_ptr<Scope> parent();
+	bool isFunctionScope() const;
 	void output(std::ostream& out, int indent = 0);
 
 	static std::shared_ptr<Scope>& getGlobalScope();
 	static void addToGlobalScope(std::string identifier, IdentifierInfo info, std::shared_ptr<Value> val);
 private:
-	bool _can_overshadow = false;
+	bool _is_function_scope = false;
 	std::shared_ptr<Scope> _parent = nullptr;
 	table<std::string, IdentifierInfo, std::shared_ptr<Value>> _vars;
 	static std::shared_ptr<Scope> global_scope;

@@ -7,14 +7,14 @@
 
 using namespace std;
 
-shared_ptr<Scope> Scope::global_scope = make_shared<Scope>(nullptr, true);
+shared_ptr<Scope> Scope::global_scope = make_shared<Scope>(nullptr, false);
 
-Scope::Scope(shared_ptr<Scope> parent, bool can_overshadow)
-	: _parent(move(parent)), _can_overshadow(can_overshadow) {}
+Scope::Scope(shared_ptr<Scope> parent, bool is_function_scope)
+	: _parent(move(parent)), _is_function_scope(is_function_scope) {}
 
 bool Scope::add(string identifier, IdentifierInfo info) {
 	function<bool(Scope*)> can_add = [&identifier, &can_add](Scope* scope) -> bool {
-		if (!scope || scope->_can_overshadow) {
+		if (!scope || scope->isFunctionScope()) {
 			return true;
 		}
 
@@ -35,6 +35,10 @@ bool Scope::add(string identifier, IdentifierInfo info) {
 
 shared_ptr<Scope> Scope::parent() {
 	return _parent;
+}
+
+bool Scope::isFunctionScope() const {
+	return _is_function_scope;
 }
 
 tuple<IdentifierInfo, shared_ptr<Value>> Scope::get(const string& identifier) const {

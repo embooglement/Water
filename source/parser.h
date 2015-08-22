@@ -15,7 +15,7 @@ public:
 	void error(const TokenMetaData& meta, const std::string& error);
 
 	std::shared_ptr<Scope> scope();
-	void pushScope(bool can_overshadow = false);
+	void pushScope(bool is_function_scope = false);
 	void popScope();
 
 	bool inLoop() const;

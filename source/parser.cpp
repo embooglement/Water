@@ -967,8 +967,8 @@ std::shared_ptr<Scope> Parser::scope() {
 	return _scope;
 }
 
-void Parser::pushScope(bool can_overshadow) {
-	_scope = make_shared<Scope>(_scope, can_overshadow);
+void Parser::pushScope(bool is_function_scope) {
+	_scope = make_shared<Scope>(_scope, is_function_scope);
 }
 
 void Parser::popScope() {
