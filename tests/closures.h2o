@@ -1,0 +1,11 @@
+var x = 0;
+
+let f = func() {
+	return func() {
+		x += 5;
+	};
+};
+
+let g = f();
+g();
+println(x);
