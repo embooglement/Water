@@ -526,6 +526,8 @@ struct ParserHelper {
 			return nullptr;
 		}
 
+		p.pushLoopState(false);
+
 		auto array_meta = token.meta();
 		vector<shared_ptr<ASTNode>> elements;
 
@@ -540,6 +542,11 @@ struct ParserHelper {
 
 			auto expr = parseExpression(p, tokens);
 			elements.push_back(move(expr));
+
+			if (!expr) {
+				p.error(token.meta(), errors::expected_expression);
+				return nullptr;
+			}
 
 			if (tokens.empty()) {
 				p.error(token.meta(), errors::expected_close_array_literal);
@@ -569,6 +576,8 @@ struct ParserHelper {
 		}
 
 		tokens.eat();
+		p.popLoopState();
+
 		return make_shared<ArrayLiteralNode>(array_meta, p.scope(), move(elements));
 	}
 
