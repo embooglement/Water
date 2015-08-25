@@ -242,13 +242,14 @@ const auto keywords = ([]() -> set<string> {
 		"class", "new", "super", "this",
 		"public", "protected", "private",
 		"as", "typeof", "instanceof",
-		"import", "export",	"module",
+		"import", "export", "module", "from",
 		"for", "switch", "case", "default",
 		"throw", "try", "catch", "finally",
 		"in", "delete",
 		"thread", "when", "always", "request",
-		"all", "any", "exists", "matches",
-		"stdin", "stdout", "stderr", "stdwarn"
+		"all", "any", "exists", "matches", "then",
+		"stdin", "stdout", "stderr", "stdwarn",
+		"do", "block", "with", "using"
 	});
 
 	return keywords;
