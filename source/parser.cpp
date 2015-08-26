@@ -541,12 +541,12 @@ struct ParserHelper {
 			}
 
 			auto expr = parseExpression(p, tokens);
-			elements.push_back(move(expr));
-
 			if (!expr) {
 				p.error(token.meta(), errors::expected_expression);
 				return nullptr;
 			}
+
+			elements.push_back(move(expr));
 
 			if (tokens.empty()) {
 				p.error(token.meta(), errors::expected_close_array_literal);
