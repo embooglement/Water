@@ -366,7 +366,6 @@ struct ParserHelper {
 			auto&& identifier = token_opt->text();
 
 			arguments.push_back(identifier);
-			// TODO: eventually allow for let and var in argument declarations
 			scope->add(identifier, { is_const });
 
 			tokens.eat();
