@@ -1,9 +1,36 @@
 #include <utility>
+#include <boost/optional.hpp>
 
 #include "parser.h"
 #include "errors.h"
 
 using namespace std;
+
+boost::optional<Token> getTokenWithType(TokenStream& tokens, TokenType type) {
+	if (tokens.empty()) {
+		return boost::none;
+	}
+
+	auto token = tokens.get();
+	if (token.type() != type) {
+		return boost::none;
+	}
+
+	return token;
+}
+
+boost::optional<Token> getTokenWithBuiltin(TokenStream& tokens, Builtin builtin) {
+	if (tokens.empty()) {
+		return boost::none;
+	}
+
+	auto token = tokens.get();
+	if (!isBuiltin(token.text(), builtin)) {
+		return boost::none;
+	}
+
+	return token;
+}
 
 struct ParserHelper {
 	// <block> ::= <statement>* | "{" <statement>* "}"
@@ -70,14 +97,8 @@ struct ParserHelper {
 		p.popScope();
 
 		if (has_open_brace) {
-			if (tokens.empty()) {
-				p.error(token.meta(), errors::expected_close_block);
-				return nullptr;
-			}
-
-			token = tokens.get();
-
-			if (!isBuiltin(token.text(), Builtin::CloseBlock)) {
+			auto token_opt = getTokenWithBuiltin(tokens, Builtin::CloseBlock);
+			if (!token_opt) {
 				p.error(token.meta(), errors::expected_close_block);
 				return nullptr;
 			}
@@ -95,13 +116,8 @@ struct ParserHelper {
 
 		tokens.eat();
 
-		if (tokens.empty()) {
-			p.error(token.meta(), errors::expected_open_control_flow_condition);
-			return nullptr;
-		}
-
-		token = tokens.get();
-		if (!isBuiltin(token.text(), Builtin::OpenControlFlowCondition)) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::OpenControlFlowCondition);
+		if (!token_opt) {
 			p.error(token.meta(), errors::expected_open_control_flow_condition);
 			return nullptr;
 		}
@@ -113,14 +129,9 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		if (tokens.empty()) {
+		token_opt = getTokenWithBuiltin(tokens, Builtin::CloseControlFlowCondition);
+		if (!token_opt) {
 			p.error(condition->meta(), errors::expected_close_control_flow_condition);
-			return nullptr;
-		}
-
-		token = tokens.get();
-		if (!isBuiltin(token.text(), Builtin::CloseControlFlowCondition)) {
-			p.error(token.meta(), errors::expected_close_control_flow_condition);
 			return nullptr;
 		}
 
@@ -146,12 +157,8 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		if (tokens.empty()) {
-			return make_shared<IfStatementNode>(if_meta, p.scope(), condition, then_block, nullptr);
-		}
-
-		token = tokens.get();
-		if (!isBuiltin(token.text(), Builtin::ElseStatement)) {
+		token_opt = getTokenWithBuiltin(tokens, Builtin::ElseStatement);
+		if (!token_opt) {
 			return make_shared<IfStatementNode>(if_meta, p.scope(), condition, then_block, nullptr);
 		}
 
@@ -180,13 +187,8 @@ struct ParserHelper {
 
 		tokens.eat();
 
-		if (tokens.empty()) {
-			p.error(token.meta(), errors::expected_open_control_flow_condition);
-			return nullptr;
-		}
-
-		token = tokens.get();
-		if (!isBuiltin(token.text(), Builtin::OpenControlFlowCondition)) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::OpenControlFlowCondition);
+		if (!token_opt) {
 			p.error(token.meta(), errors::expected_open_control_flow_condition);
 			return nullptr;
 		}
@@ -198,14 +200,9 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		if (tokens.empty()) {
+		token_opt = getTokenWithBuiltin(tokens, Builtin::CloseControlFlowCondition);
+		if (!token_opt) {
 			p.error(condition->meta(), errors::expected_close_control_flow_condition);
-			return nullptr;
-		}
-
-		token = tokens.get();
-		if (!isBuiltin(token.text(), Builtin::CloseControlFlowCondition)) {
-			p.error(token.meta(), errors::expected_close_control_flow_condition);
 			return nullptr;
 		}
 
@@ -285,14 +282,9 @@ struct ParserHelper {
 			return statement;
 		}
 
-		if (tokens.empty()) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::StatementDelimiter);
+		if (!token_opt) {
 			p.error(statement->meta(), errors::expected_statement_delimiter);
-			return nullptr;
-		}
-
-		token = tokens.get();
-		if (!isBuiltin(token.text(), Builtin::StatementDelimiter)) {
-			p.error(token.meta(), errors::expected_statement_delimiter);
 			return nullptr;
 		}
 
@@ -364,20 +356,14 @@ struct ParserHelper {
 				tokens.eat();
 			}
 
-			if (tokens.empty()) {
-				p.error(token.meta(), errors::expected_identifier);
-				return nullptr;
-			}
-
-			token = tokens.get();
-
-			if (token.type() != TokenType::Identifier) {
+			auto token_opt = getTokenWithType(tokens, TokenType::Identifier);
+			if (!token_opt) {
 				p.error(token.meta(), errors::expected_identifier);
 				return nullptr;
 			}
 
 			require_identifier = false;
-			auto&& identifier = token.text();
+			auto&& identifier = token_opt->text();
 
 			arguments.push_back(identifier);
 			// TODO: eventually allow for let and var in argument declarations
@@ -397,14 +383,8 @@ struct ParserHelper {
 			}
 		}
 
-		if (tokens.empty()) {
-			p.error(token.meta(), errors::expected_open_block);
-			return nullptr;
-		}
-
-		token = tokens.get();
-
-		if (!isBuiltin(token.text(), Builtin::OpenBlock)) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::OpenBlock);
+		if (!token_opt) {
 			p.error(token.meta(), errors::expected_open_block);
 			return nullptr;
 		}
@@ -457,22 +437,17 @@ struct ParserHelper {
 	}
 
 	static shared_ptr<ASTNode> parseFunctionCall(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
-		if (tokens.empty()) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::OpenFunctionCall);
+		if (!token_opt) {
 			p.error(lhs->meta(), errors::expected_open_func_call);
 			return nullptr;
 		}
 
-		auto token = tokens.get();
-		auto call_meta = token.meta();
-
-		if (!isBuiltin(token.text(), Builtin::OpenFunctionCall)) {
-			p.error(token.meta(), errors::expected_open_func_call);
-			return nullptr;
-		}
-
+		auto call_meta = token_opt->meta();
 		tokens.eat();
+
 		if (tokens.empty()) {
-			p.error(token.meta(), errors::expected_close_func_call);
+			p.error(call_meta, errors::expected_close_func_call);
 			return nullptr;
 		}
 
@@ -486,7 +461,7 @@ struct ParserHelper {
 
 			arguments.push_back(argument);
 
-			token = tokens.get();
+			auto token = tokens.get();
 			const auto& token_text = token.text();
 
 			if (isBuiltin(token_text, Builtin::CloseFunctionCall)) {
@@ -504,7 +479,7 @@ struct ParserHelper {
 			}
 		}
 
-		token = tokens.get();
+		auto token = tokens.get();
 		if (!isBuiltin(token.text(), Builtin::CloseFunctionCall)) {
 			p.error(token.meta(), errors::expected_close_func_call);
 			return nullptr;
@@ -564,13 +539,8 @@ struct ParserHelper {
 			}
 		}
 
-		if (tokens.empty()) {
-			p.error(token.meta(), errors::expected_close_array_literal);
-			return nullptr;
-		}
-
-		token = tokens.get();
-		if (!isBuiltin(token.text(), Builtin::CloseArrayLiteral)) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::CloseArrayLiteral);
+		if (!token_opt) {
 			p.error(token.meta(), errors::expected_close_array_literal);
 			return nullptr;
 		}
@@ -611,14 +581,8 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		if (tokens.empty()) {
-			p.error(token.meta(), errors::expected_close_subscript);
-			return nullptr;
-		}
-
-		token = tokens.get();
-
-		if (!isBuiltin(token.text(), Builtin::CloseSubscript)) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::CloseSubscript);
+		if (!token_opt) {
 			p.error(token.meta(), errors::expected_close_subscript);
 			return nullptr;
 		}
@@ -629,30 +593,24 @@ struct ParserHelper {
 
 	// <member-access> ::= <expr> "." <identifier>
 	static shared_ptr<ASTNode> parseAccessMember(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
-		if (tokens.empty()) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::AccessMember);
+		if (!token_opt) {
 			p.error(lhs->meta(), errors::expected_access_member);
 			return nullptr;
 		}
 
-		auto token = tokens.get();
-		auto access_meta = token.meta();
-
-		if (!isBuiltin(token.text(), Builtin::AccessMember)) {
-			p.error(token.meta(), errors::expected_access_member);
-			return nullptr;
-		}
-
+		auto access_meta = token_opt->meta();
 		tokens.eat();
-		token = tokens.get();
 
-		if (token.type() != TokenType::Identifier) {
-			p.error(token.meta(), errors::expected_identifier);
+		token_opt = getTokenWithType(tokens, TokenType::Identifier);
+		if (!token_opt) {
+			p.error(access_meta, errors::expected_identifier);
 			return nullptr;
 		}
 
 		tokens.eat();
 
-		return make_shared<AccessMemberNode>(access_meta, p.scope(), move(lhs), token.text());
+		return make_shared<AccessMemberNode>(access_meta, p.scope(), move(lhs), token_opt->text());
 	}
 
 	// <expr-primary> ::= <number-literal> | <string-literal> | <boolean-literal> | <function-decl> | <function-call>
@@ -897,24 +855,18 @@ struct ParserHelper {
 
 		tokens.eat();
 
-		if (tokens.empty()) {
-			p.error(token.meta(), errors::expected_identifier);
+		auto token_opt = getTokenWithType(tokens, TokenType::Identifier);
+		if (!token_opt) {
+			p.error(declaration_meta, errors::expected_identifier);
 			return nullptr;
 		}
 
-		token = tokens.get();
-
-		if (token.type() != TokenType::Identifier) {
-			p.error(token.meta(), errors::expected_identifier);
-			return nullptr;
-		}
-
-		auto id = token.text();
+		auto id = token_opt->text();
 		auto scope = p.scope();
 
 		bool added_variable = scope->add(id, { is_const });
 		if (!added_variable) {
-			p.error(token.meta(), errors::redeclaration + id);
+			p.error(token_opt->meta(), errors::redeclaration + id);
 			return nullptr;
 		}
 
