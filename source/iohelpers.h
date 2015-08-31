@@ -4,6 +4,8 @@
 #include <iostream>
 #include <functional>
 
+// TODO: allow printing simple astnodes on the same line
+
 namespace io {
 	namespace _Details {
 		struct _Indent {
