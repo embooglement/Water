@@ -534,6 +534,94 @@ struct ParserHelper {
 		return make_shared<ArrayLiteralNode>(array_meta, p.scope(), move(elements));
 	}
 
+	static shared_ptr<ASTNode> parseObjectLiteral(Parser& p, TokenStream& tokens) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::OpenObjectLiteral);
+		if (!token_opt) {
+			p.error(tokens.meta(), errors::expected_open_object_literal);
+			return nullptr;
+		}
+
+		auto obj_meta = token_opt->meta();
+
+		tokens.eat();
+		p.pushLoopState(false);
+
+		auto scope = p.scope();
+		unordered_map<string, shared_ptr<ASTNode>> members;
+
+		while (tokens.hasNext()) {
+			auto token = tokens.get();
+			auto token_meta = token.meta();
+
+			if (isBuiltin(token.text(), Builtin::CloseObjectLiteral)) {
+				break;
+			}
+
+			string key;
+			switch (token.type()) {
+				case TokenType::Identifier:
+				case TokenType::StringLiteral:
+					key = token.text();
+					break;
+				default:
+					p.error(token_meta, errors::expected_object_key);
+					return nullptr;
+			}
+
+			if (members.find(key) != end(members)) {
+				p.error(token.meta(), errors::redeclared_object_key + key);
+				return nullptr;
+			}
+
+			tokens.eat();
+
+			token_opt = getTokenWithBuiltin(tokens, Builtin::KeyValueSeperator);
+			if (!token_opt) {
+				p.error(tokens.meta(), errors::expected_object_seperator);
+				return nullptr;
+			}
+
+			token_meta = token_opt->meta();
+
+			tokens.eat();
+
+			auto expr = parseExpression(p, tokens);
+			if (!expr) {
+				p.error(token_meta, errors::expected_expression);
+				return nullptr;
+			}
+
+			members.emplace(move(key), move(expr));
+
+			if (tokens.empty()) {
+				p.error(token.meta(), errors::expected_close_object_literal);
+				return nullptr;
+			}
+
+			token = tokens.get();
+			const auto& token_text = token.text();
+
+			if (isBuiltin(token_text, Builtin::ElementDelimiter)) {
+				tokens.eat();
+			} else if (!isBuiltin(token_text, Builtin::CloseObjectLiteral)) {
+				p.error(token.meta(), errors::expected_close_object_literal);
+				return nullptr;
+			}
+		}
+
+		token_opt = getTokenWithBuiltin(tokens, Builtin::CloseObjectLiteral);
+		if (!token_opt) {
+			p.error(tokens.meta(), errors::expected_close_object_literal);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		p.popLoopState();
+
+		return make_shared<ObjectLiteralNode>(obj_meta, move(scope), move(members));
+	}
+
 	// <subscript-expr> ::= <expr> "[" <expr> "]"
 	static shared_ptr<ASTNode> parseSubscript(Parser& p, TokenStream& tokens, shared_ptr<ASTNode> lhs) {
 		auto token_opt = getTokenWithBuiltin(tokens, Builtin::OpenSubscript);
@@ -622,6 +710,8 @@ struct ParserHelper {
 					expr = parseParenthesesExpression(p, tokens);
 				} else if (isBuiltin(token_text, Builtin::OpenArrayLiteral)) {
 					expr = parseArrayLiteral(p, tokens);
+				} else if (isBuiltin(token_text, Builtin::OpenObjectLiteral)) {
+					expr = parseObjectLiteral(p, tokens);
 				}
 			} break;
 			case TokenType::Identifier: {

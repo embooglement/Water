@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <unordered_map>
 #include <memory>
 
 #include "constants.h"
@@ -80,6 +81,15 @@ public:
 	virtual std::shared_ptr<Value> evaluate() const override;
 private:
 	std::vector<std::shared_ptr<ASTNode>> _elements;
+};
+
+class ObjectLiteralNode : public ASTNode {
+public:
+	ObjectLiteralNode(const TokenMetaData& meta, std::shared_ptr<Scope> scope, std::unordered_map<std::string, std::shared_ptr<ASTNode>> members);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate() const override;
+private:
+	std::unordered_map<std::string, std::shared_ptr<ASTNode>> _members;
 };
 
 class SubscriptNode : public ASTNode {

@@ -151,6 +151,24 @@ shared_ptr<Value> ArrayLiteralNode::evaluate() const {
 	return make_shared<ArrayValue>(move(elements));
 }
 
+/* ===== ObjectLiteralNode ===== */
+ObjectLiteralNode::ObjectLiteralNode(const TokenMetaData& meta, shared_ptr<Scope> scope, unordered_map<string, shared_ptr<ASTNode>> members)
+	: ASTNode(meta, move(scope)), _members(move(members)) {}
+
+void ObjectLiteralNode::output(ostream& out, int indent) const {
+	out << io::indent(indent) << "(object";
+	for (auto member : _members) {
+		out << endl << io::indent(indent + 1) << "(" << member.first << endl;
+		member.second->output(out, indent + 2);
+		out << endl << io::indent(indent + 1) << ")";
+	}
+	out << endl << io::indent(indent) << ")";
+}
+
+shared_ptr<Value> ObjectLiteralNode::evaluate() const {
+	return NullValue::get();
+}
+
 /* ===== SubscriptNode ===== */
 
 SubscriptNode::SubscriptNode(const TokenMetaData& meta, shared_ptr<Scope> scope, std::shared_ptr<ASTNode> lhs, std::shared_ptr<ASTNode> index)

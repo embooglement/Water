@@ -85,11 +85,16 @@ enum class Builtin {
 	FunctionCloseArgumentList,
 	Return,
 
+	ElementDelimiter,
+
 	OpenArrayLiteral,
 	CloseArrayLiteral,
 	OpenSubscript,
 	CloseSubscript,
-	ElementDelimiter
+
+	OpenObjectLiteral,
+	CloseObjectLiteral,
+	KeyValueSeperator
 };
 
 enum class BindingDirection {

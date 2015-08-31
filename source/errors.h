@@ -27,6 +27,11 @@ namespace errors {
 	static const std::string expected_close_single_quote = "expected closing single quote";
 	static const std::string expected_open_array_literal = "expected opening square brace";
 	static const std::string expected_close_array_literal = "expected closing square brace";
+	static const std::string expected_open_object_literal = "expected opening curly brace";
+	static const std::string expected_close_object_literal = "expected closing curly brace";
+	static const std::string expected_object_seperator = "expected a colon";
+	static const std::string expected_object_key = "expected identifier or string literal";
+	static const std::string redeclared_object_key = "key included in object multiple times: ";
 	static const std::string expected_open_subscript = "expected opening square brace";
 	static const std::string expected_close_subscript = "expected closing square brace";
 	static const std::string expected_element_delimiter = "expected a comma";

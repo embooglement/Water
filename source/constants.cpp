@@ -80,7 +80,11 @@ const map<Builtin, string> builtins = {
 
 	{ Builtin::WhileStatement, "while" },
 	{ Builtin::BreakStatement, "break" },
-	{ Builtin::ContinueStatement, "continue" }
+	{ Builtin::ContinueStatement, "continue" },
+
+	{ Builtin::OpenObjectLiteral, "{" },
+	{ Builtin::CloseObjectLiteral, "}" },
+	{ Builtin::KeyValueSeperator, ":" }
 };
 
 const int assignment_level = 0;
