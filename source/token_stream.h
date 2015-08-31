@@ -13,7 +13,9 @@ public:
 	bool empty() const;
 	Token get() const;
 	void eat();
+	TokenMetaData meta() const;
 private:
+	TokenMetaData _meta;
 	TokenIter _current;
 	const TokenIter _end;
 	bool _ignore_comments;

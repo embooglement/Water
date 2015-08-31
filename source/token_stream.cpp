@@ -8,6 +8,10 @@ TokenStream::TokenStream(TokenIter begin, TokenIter end, bool ignore_comments)
 		if (ignore_comments && _current->type() == TokenType::Comment) {
 			eat();
 		}
+
+		if (_current != _end) {
+			_meta = _current->meta();
+		}
 	}
 
 bool TokenStream::hasNext() const {
@@ -37,15 +41,19 @@ Token TokenStream::get() const {
 void TokenStream::eat() {
 	++_current;
 
-	if (!_ignore_comments) {
-		return;
-	}
-
-	while (_current != _end) {
+	while (_ignore_comments && _current != _end) {
 		if (_current->type() == TokenType::Comment) {
 			++_current;
 		} else {
 			break;
 		}
 	}
+
+	// if (hasNext()) {
+	// 	_meta = _current->meta();
+	// }
+}
+
+TokenMetaData TokenStream::meta() const {
+	return _meta;
 }
