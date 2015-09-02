@@ -1,4 +1,5 @@
 #include <sstream>
+#include <cmath>
 
 #include "value.h"
 #include "scope.h"
@@ -198,9 +199,9 @@ void ArrayValue::output(std::ostream& out) const {
 shared_ptr<Value> ArrayValue::get(const shared_ptr<Value>& index) const {
 	switch (index->type()) {
 		case ValueType::Number:
-			return getIndex(index);
+			return getIndex(toNumber(index));
 		case ValueType::String:
-			return getMember(index);
+			return getMember(toString(index));
 		default:
 			throw InvalidPropertyType();
 	}
@@ -227,8 +228,13 @@ unsigned int ArrayValue::length() const {
 	return _elements.size();
 }
 
-shared_ptr<Value> ArrayValue::getIndex(const shared_ptr<Value>& index) const {
-	unsigned int i = toNumber(index);
+unsigned int ArrayValue::convertIndex(double index) const {
+	// TODO: this behavior is probably bad
+	return static_cast<unsigned int>(floor(index));
+}
+
+shared_ptr<Value> ArrayValue::getIndex(double index) const {
+	auto i = convertIndex(index);
 	if (i >= _elements.size()) {
 		throw OutOfBoundsError(i, _elements.size());
 	}
@@ -236,8 +242,7 @@ shared_ptr<Value> ArrayValue::getIndex(const shared_ptr<Value>& index) const {
 	return _elements[i];
 }
 
-shared_ptr<Value> ArrayValue::getMember(const shared_ptr<Value>& index) const {
-	auto member = toString(index);
+shared_ptr<Value> ArrayValue::getMember(const string& member) const {
 	if (member == "length") {
 		return NumberValue::create(length());
 	} else if (member == "push") {
@@ -254,12 +259,8 @@ shared_ptr<Value> ArrayValue::getMember(const shared_ptr<Value>& index) const {
 	return NullValue::get();
 }
 
-void ArrayValue::setIndex(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
-	if (index->type() != ValueType::Number) {
-		throw TypeError("Expression is not of type Number");
-	}
-
-	int i = toNumber(index);
+void ArrayValue::setIndex(double index, shared_ptr<Value> new_value) {
+	auto i = convertIndex(index);
 	if (i >= _elements.size()) {
 		throw OutOfBoundsError(i, _elements.size());
 	}
@@ -267,10 +268,84 @@ void ArrayValue::setIndex(const shared_ptr<Value>& index, shared_ptr<Value> new_
 	_elements[i] = move(new_value);
 }
 
-void ArrayValue::setMember(const shared_ptr<Value>& member, shared_ptr<Value> new_value) {
-	std::ostringstream stream;
-	member->output(stream);
-	throw ImmutableError(stream.str());
+void ArrayValue::setMember(const string& member, shared_ptr<Value> new_value) {
+	throw ImmutableError(member);
+}
+
+/* ===== ObjectValue ===== */
+
+ObjectValue::ObjectValue(unordered_map<string, shared_ptr<Value>> members)
+	: Value(value_type), _members(move(members)) {}
+
+void ObjectValue::output(ostream& out) const {
+	out << "{";
+
+	// TODO: this isn't really deterministic
+	auto end_it = end(_members);
+	for (auto it = begin(_members); it != end_it; ++it) {
+		out << it->first << ": ";
+		it->second->output(out);
+
+		if (next(it) != end_it) {
+			out << ", ";
+		}
+	}
+
+	out << "}";
+}
+
+shared_ptr<Value> ObjectValue::get(const shared_ptr<Value>& index) const {
+	switch (index->type()) {
+		case ValueType::Number:
+			return getIndex(toNumber(index));
+		case ValueType::String:
+			return getMember(toString(index));
+		default:
+			throw InvalidPropertyType();
+	}
+}
+
+void ObjectValue::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
+	switch (index->type()) {
+		case ValueType::Number:
+			setIndex(toNumber(index), move(new_value));
+			break;
+		case ValueType::String:
+			setMember(toString(index), move(new_value));
+			break;
+		default:
+			throw InvalidPropertyType();
+	}
+}
+
+bool ObjectValue::isReferenceType() const {
+	return true;
+}
+
+string ObjectValue::convertIndex(double index) const {
+	// TODO: this should probably be smarter about formatting the index
+	return to_string(index);
+}
+
+shared_ptr<Value> ObjectValue::getIndex(double index) const {
+	return getMember(convertIndex(index));
+}
+
+shared_ptr<Value> ObjectValue::getMember(const string& member) const {
+	auto it = _members.find(member);
+	if (it == end(_members)) {
+		return NullValue::get();
+	}
+
+	return it->second;
+}
+
+void ObjectValue::setIndex(double index, shared_ptr<Value> new_value) {
+	setMember(convertIndex(index), move(new_value));
+}
+
+void ObjectValue::setMember(const string& member, shared_ptr<Value> new_value) {
+	_members[member] = move(new_value);
 }
 
 /* ===== FunctionValue ===== */

@@ -1,0 +1,24 @@
+let x = {
+	a: 1,
+	b: 2,
+	c: 3
+};
+
+println(x.a, x.b, x.c);
+
+let y = {
+	"a": 1,
+	'b': 2,
+	c: 3
+};
+
+println(y.a, y["b"], y['c']);
+
+var z = {};
+println(z);
+
+z.a = 1;
+println(z);
+
+z["b"] = 2;
+println(z);

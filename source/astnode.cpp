@@ -166,7 +166,13 @@ void ObjectLiteralNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> ObjectLiteralNode::evaluate() const {
-	return NullValue::get();
+	unordered_map<string, shared_ptr<Value>> members;
+
+	for (auto&& member : _members) {
+		members.emplace(member.first, member.second->evaluate());
+	}
+
+	return make_shared<ObjectValue>(move(members));
 }
 
 /* ===== SubscriptNode ===== */
@@ -184,12 +190,7 @@ void SubscriptNode::output(ostream& out, int indent) const {
 
 shared_ptr<Value> SubscriptNode::evaluate() const {
 	auto lhs = _lhs->evaluate();
-	if (lhs->type() != ValueType::Array) {
-		throw TypeError("Expression is not of type Array");
-	}
-
-	auto arr = static_pointer_cast<ArrayValue>(lhs);
-	return arr->get(_index->evaluate());
+	return lhs->get(_index->evaluate());
 }
 
 bool SubscriptNode::isLValue() const {

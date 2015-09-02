@@ -15,8 +15,9 @@ enum class ValueType {
 	Number,
 	String,
 	Boolean,
-	Function,
-	Array
+	Array,
+	Object,
+	Function
 };
 
 class ASTNode;
@@ -145,12 +146,31 @@ public:
 	virtual bool isReferenceType() const override;
 	unsigned int length() const;
 protected:
-	std::shared_ptr<Value> getIndex(const std::shared_ptr<Value>& index) const;
-	std::shared_ptr<Value> getMember(const std::shared_ptr<Value>& member) const;
-	void setIndex(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
-	void setMember(const std::shared_ptr<Value>& member, std::shared_ptr<Value> new_value);
+	unsigned int convertIndex(double index) const;
+	std::shared_ptr<Value> getIndex(double index) const;
+	std::shared_ptr<Value> getMember(const std::string& member) const;
+	void setIndex(double index, std::shared_ptr<Value> new_value);
+	void setMember(const std::string& member, std::shared_ptr<Value> new_value);
 private:
 	std::vector<std::shared_ptr<Value>> _elements;
+};
+
+class ObjectValue : public Value {
+public:
+	static const ValueType value_type = ValueType::Object;
+	ObjectValue(std::unordered_map<std::string, std::shared_ptr<Value>> members);
+	virtual void output(std::ostream& out) const override;
+	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const override;
+	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
+	virtual bool isReferenceType() const override;
+protected:
+	std::string convertIndex(double index) const;
+	std::shared_ptr<Value> getIndex(double index) const;
+	std::shared_ptr<Value> getMember(const std::string& member) const;
+	void setIndex(double index, std::shared_ptr<Value> new_value);
+	void setMember(const std::string& member, std::shared_ptr<Value> new_value);
+private:
+	std::unordered_map<std::string, std::shared_ptr<Value>> _members;
 };
 
 class FunctionValue : public Value, public std::enable_shared_from_this<FunctionValue> {
