@@ -71,18 +71,12 @@ struct ParserHelper {
 		auto scope = p.scope();
 
 		while (tokens.hasNext()) {
-			shared_ptr<ASTNode> statement = nullptr;
 			token = tokens.get();
-			auto token_text = token.text();
-
-			if (has_open_brace && isBuiltin(token_text, Builtin::CloseBlock)) {
+			if (has_open_brace && isBuiltin(token.text(), Builtin::CloseBlock)) {
 				break;
-			} else if (isBuiltin(token_text, Builtin::OpenBlock)) {
-				statement = parseBlock(p, tokens);
-			} else {
-				statement = parseStatement(p, tokens);
 			}
 
+			shared_ptr<ASTNode> statement = parseBlockOrStatement(p, tokens);
 			if (!statement) {
 				break;
 			}
@@ -138,16 +132,7 @@ struct ParserHelper {
 			return nullptr;
 		}
 
-		shared_ptr<ASTNode> then_block;
-
-		// TODO: refactor this whole bit into a helper
-		token = tokens.get();
-		if (isBuiltin(token.text(), Builtin::OpenBlock)) {
-			then_block = parseBlock(p, tokens);
-		} else {
-			then_block = parseStatement(p, tokens);
-		}
-
+		shared_ptr<ASTNode> then_block = parseBlockOrStatement(p, tokens);
 		if (!then_block) {
 			p.error(tokens.meta(), errors::expected_statement);
 			return nullptr;
@@ -160,14 +145,7 @@ struct ParserHelper {
 
 		tokens.eat();
 
-		shared_ptr<ASTNode> else_block;
-		token = tokens.get();
-		if (isBuiltin(token.text(), Builtin::OpenBlock)) {
-			else_block = parseBlock(p, tokens);
-		} else {
-			else_block = parseStatement(p, tokens);
-		}
-
+		shared_ptr<ASTNode> else_block = parseBlockOrStatement(p, tokens);
 		if (!else_block) {
 			p.error(tokens.meta(), errors::expected_statement);
 			return nullptr;
@@ -204,20 +182,13 @@ struct ParserHelper {
 		}
 
 		tokens.eat();
-		shared_ptr<ASTNode> loop_block;
 
 		p.pushLoopState(true);
-		token = tokens.get();
-
-		if (isBuiltin(token.text(), Builtin::OpenBlock)) {
-			loop_block = parseBlock(p, tokens);
-		} else {
-			loop_block = parseStatement(p, tokens);
-		}
-
+		shared_ptr<ASTNode> loop_block = parseBlockOrStatement(p, tokens);
 		p.popLoopState();
 
 		if (!loop_block) {
+			p.error(tokens.meta(), errors::expected_statement);
 			return nullptr;
 		}
 
@@ -288,6 +259,20 @@ struct ParserHelper {
 
 		tokens.eat();
 		return statement;
+	}
+
+	static shared_ptr<ASTNode> parseBlockOrStatement(Parser& p, TokenStream& tokens) {
+		if (tokens.empty()) {
+			p.error(tokens.meta(), errors::expected_statement);
+			return nullptr;
+		}
+
+		auto token = tokens.get();
+		if (isBuiltin(token.text(), Builtin::OpenBlock)) {
+			return parseBlock(p, tokens);
+		} else {
+			return parseStatement(p, tokens);
+		}
 	}
 
 	// <func-decl> ::= "func" "(" <id>* ")" <block>
