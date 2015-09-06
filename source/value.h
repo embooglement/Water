@@ -163,6 +163,7 @@ public:
 	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const override;
 	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
 	virtual bool isReferenceType() const override;
+	std::vector<std::string> keys() const;
 protected:
 	std::string convertIndex(double index) const;
 	std::shared_ptr<Value> getIndex(double index) const;

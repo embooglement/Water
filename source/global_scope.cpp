@@ -6,6 +6,7 @@
 #include "value.h"
 #include "scope.h"
 #include "astnode.h"
+#include "utility.h"
 
 using namespace std;
 
@@ -68,6 +69,24 @@ void setupMetaModule() {
 }
 
 void setupDataStructuresModule() {
+	addFunctionToGlobalScope("keys", [](const Arguments& arguments) -> ValuePtr {
+		if (arguments.size() != 1) {
+			throw InvalidArgumentsCountError("keys", 1, arguments.size());
+		}
+
+		auto&& argument = arguments[0];
+		if (argument->type() != ValueType::Object) {
+			throw TypeError("Argument is not of type Object");
+		}
+
+		auto object = static_pointer_cast<ObjectValue>(argument);
+		auto keys = object->keys();
+
+		return make_shared<ArrayValue>(util::map<ValuePtr>(keys, [](const string& key) {
+			return StringValue::create(key);
+		}));
+	});
+
 	addFunctionToGlobalScope("length", [](const Arguments& arguments) -> ValuePtr {
 		if (arguments.size() != 1) {
 			throw InvalidArgumentsCountError("length", 1, arguments.size());

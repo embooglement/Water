@@ -348,6 +348,14 @@ void ObjectValue::setMember(const string& member, shared_ptr<Value> new_value) {
 	_members[member] = move(new_value);
 }
 
+vector<string> ObjectValue::keys() const {
+	vector<string> keys;
+	for (auto&& member : _members) {
+		keys.push_back(member.first);
+	}
+	return keys;
+}
+
 /* ===== FunctionValue ===== */
 
 FunctionValue::FunctionValue(string identifier)

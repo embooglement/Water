@@ -1,0 +1,50 @@
+let extend = func(var a, b) {
+	let b_keys = keys(b);	
+	var i = 0;
+	while (i < b_keys.length) {
+		let key = b_keys[i];
+		a[key] = b[key];
+		i += 1;
+	}
+
+	return a;
+};
+
+
+var a1 = {};
+let b1 = {a: 3};
+extend(a1, b1);
+println(a1);
+
+var a2 = {a: 3};
+let b2 = {a: 27};
+extend(a2, b2);
+println(a2);
+
+var a3 = {a: 1, b: 2, c: 3};
+let b3 = {a: 48, c: 8, d: 12};
+extend(a3, b3);
+println(a3);
+
+let each_entry = func(obj, callback) {
+	let obj_keys = keys(obj);
+	var i = 0;
+	while (i < obj_keys.length) {
+		let key = obj_keys[i];
+		callback(key, obj[key]);
+		i += 1;
+	}
+};
+
+let print_key_value = func(key, value) {
+	println(key, "=>", value);
+};
+
+let obj1 = {};
+each_entry(obj1, print_key_value);
+
+let obj2 = {a: 3};
+each_entry(obj2, print_key_value);
+
+let obj3 = {a: 1, b: 2, c: 3};
+each_entry(obj3, print_key_value);
