@@ -553,6 +553,8 @@ shared_ptr<Value> WhileStatementNode::evaluate() const {
 				break;
 			} else if (sentinel->isContinue()) {
 				continue;
+			} else if (sentinel->isReturn()) {
+				return sentinel;
 			}
 		}
 	}

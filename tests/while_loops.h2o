@@ -34,6 +34,22 @@ let test_continue = func() {
 	println(i);
 };
 
+let test_return = func() {
+	let f = func() {
+		var i = 0;
+		while (i < 10) {
+			if (i > 4) {
+				return i;
+			}
+			i += 1;
+		}
+		return i;
+	};
+
+	println(f());
+};
+
 test_while();
 test_break();
 test_continue();
+test_return();
