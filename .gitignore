@@ -3,6 +3,7 @@
 *~
 .*~
 .settings
+.vscode
 water*
 todo.txt
 TerminalFeatures.txt
