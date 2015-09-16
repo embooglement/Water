@@ -562,6 +562,56 @@ shared_ptr<Value> WhileStatementNode::evaluate() const {
 	return NullValue::get();
 }
 
+/* ===== ForStatementNode ===== */
+
+ForStatementNode::ForStatementNode(const TokenMetaData& meta, shared_ptr<Scope> scope, bool is_const, string iterator_name, shared_ptr<ASTNode> array_expr, std::shared_ptr<ASTNode> loop_block)
+	: ASTNode(meta, move(scope)), _is_const(is_const), _iterator_name(move(iterator_name)),
+	  _array(move(array_expr)), _loop(move(loop_block)) {}
+
+void ForStatementNode::output(ostream& out, int indent) const {
+	out << io::indent(indent) << "(for" << endl;
+	out << io::indent(indent + 1);
+	out << (_is_const ? "let " : "var ") << _iterator_name << endl;
+	_array->output(out, indent + 1);
+	out << endl;
+	_loop->output(out, indent + 1);
+	out << endl << io::indent(indent) << ")";
+}
+
+shared_ptr<Value> ForStatementNode::evaluate() const {
+	auto expr = _array->evaluate();
+	if (expr->type() != ValueType::Array) {
+		throw TypeError("Expression not of type Array");
+	}
+
+	auto scope = this->scope();
+	auto array_expr = static_pointer_cast<ArrayValue>(expr);
+	auto length = array_expr->length();
+
+	for (unsigned int i = 0; i < length; ++i) {
+		auto iter_expr = array_expr->get(i);
+		if (!iter_expr->isReferenceType()) {
+			iter_expr = iter_expr->copy();
+		}
+
+		scope->setValue(_iterator_name, move(iter_expr));
+
+		auto loop_value = _loop->evaluate();
+		if (loop_value && loop_value->type() == ValueType::Sentinel) {
+			auto sentinel = static_pointer_cast<SentinelValue>(loop_value);
+			if (sentinel->isBreak()) {
+				break;
+			}
+
+			if (sentinel->isReturn()) {
+				return sentinel;
+			}
+		}
+	}
+
+	return NullValue::get();
+}
+
 /* ===== DeclarationNode ===== */
 
 DeclarationNode::DeclarationNode(const TokenMetaData& meta, shared_ptr<Scope> scope, bool is_const, string identifier, shared_ptr<ASTNode> expr)

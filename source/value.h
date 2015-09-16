@@ -142,6 +142,7 @@ public:
 	ArrayValue(std::vector<std::shared_ptr<Value>> elements);
 	virtual void output(std::ostream& out) const override;
 	virtual std::shared_ptr<Value> get(const std::shared_ptr<Value>& index) const override;
+	virtual std::shared_ptr<Value> get(unsigned int index) const;
 	virtual void set(const std::shared_ptr<Value>& index, std::shared_ptr<Value> new_value);
 	virtual bool isReferenceType() const override;
 	unsigned int length() const;

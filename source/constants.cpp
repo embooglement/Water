@@ -79,6 +79,8 @@ const map<Builtin, string> builtins = {
 	{ Builtin::ElementDelimiter, "," },
 
 	{ Builtin::WhileStatement, "while" },
+	{ Builtin::ForStatement, "for" },
+	{ Builtin::ForSeperator, "in" },
 	{ Builtin::BreakStatement, "break" },
 	{ Builtin::ContinueStatement, "continue" },
 

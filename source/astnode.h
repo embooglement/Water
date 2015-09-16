@@ -181,6 +181,18 @@ private:
 	std::shared_ptr<ASTNode> _loop;
 };
 
+class ForStatementNode : public ASTNode {
+public:
+	ForStatementNode(const TokenMetaData& meta, std::shared_ptr<Scope> scope, bool is_const, std::string iterator_name, std::shared_ptr<ASTNode> array_expr, std::shared_ptr<ASTNode> loop_block);
+	virtual void output(std::ostream& out, int indent = 0) const override;
+	virtual std::shared_ptr<Value> evaluate() const override;
+private:
+	bool _is_const;
+	std::string _iterator_name;
+	std::shared_ptr<ASTNode> _array;
+	std::shared_ptr<ASTNode> _loop;
+};
+
 class DeclarationNode : public ASTNode {
 public:
 	DeclarationNode(const TokenMetaData& meta, std::shared_ptr<Scope> scope, bool is_const, std::string identifier, std::shared_ptr<ASTNode> expr);

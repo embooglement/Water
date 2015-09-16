@@ -1,0 +1,25 @@
+let for_constant = func() {
+	var arr = [1, 2, 3];
+	for (let elem in arr) {
+		println(elem);
+	}
+};
+
+let for_variable = func() {
+	var arr = [1, 2, 3];
+	for (var elem in arr) {
+		elem *= 2;
+		println(elem);
+	}
+};
+
+let for_implicit = func() {
+	var arr = [1, 2, 3];
+	for (elem in arr) {
+		println(elem);
+	}
+};
+
+for_constant();
+for_variable();
+for_implicit();

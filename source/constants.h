@@ -72,6 +72,7 @@ enum class Builtin {
 	ElseStatement,
 	WhileStatement,
 	ForStatement,
+	ForSeperator,
 
 	BreakStatement,
 	ContinueStatement,

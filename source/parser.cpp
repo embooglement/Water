@@ -195,6 +195,90 @@ struct ParserHelper {
 		return make_shared<WhileStatementNode>(while_meta, p.scope(), move(condition), move(loop_block));
 	}
 
+	static shared_ptr<ASTNode> parseForStatement(Parser& p, TokenStream& tokens) {
+		auto token_opt = getTokenWithBuiltin(tokens, Builtin::ForStatement);
+		if (!token_opt) {
+			p.error(tokens.meta(), errors::expected_for_statement);
+			return nullptr;
+		}
+
+		auto for_meta = token_opt->meta();
+		tokens.eat();
+
+		token_opt = getTokenWithBuiltin(tokens, Builtin::OpenControlFlowCondition);
+		if (!token_opt) {
+			p.error(tokens.meta(), errors::expected_open_control_flow_condition);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		if (tokens.empty()) {
+			p.error(tokens.meta(), errors::expected_declaration);
+			return nullptr;
+		}
+
+		bool iter_is_const = true;
+		auto token = tokens.get();
+		auto token_text = token.text();
+
+		if (isBuiltin(token_text, Builtin::VariableDeclarator)) {
+			iter_is_const = false;
+			tokens.eat();
+		} else if (isBuiltin(token_text, Builtin::ConstantDeclarator)) {
+			tokens.eat();
+		}
+
+		token_opt = getTokenWithType(tokens, TokenType::Identifier);
+		if (!token_opt) {
+			p.error(tokens.meta(), errors::expected_identifier);
+			return nullptr;
+		}
+
+		auto identifier = token_opt->text();
+
+		bool added_variable = p.scope()->add(identifier, { iter_is_const });
+		if (!added_variable) {
+			p.error(tokens.meta(), errors::redeclaration + identifier);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		token_opt = getTokenWithBuiltin(tokens, Builtin::ForSeperator);
+		if (!token_opt) {
+			p.error(tokens.meta(), errors::expected_for_seperator);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		auto array_expr = parseExpression(p, tokens);
+		if (!array_expr) {
+			p.error(tokens.meta(), errors::expected_expression);
+			return nullptr;
+		}
+
+		token_opt = getTokenWithBuiltin(tokens, Builtin::CloseControlFlowCondition);
+		if (!token_opt) {
+			p.error(tokens.meta(), errors::expected_close_control_flow_condition);
+			return nullptr;
+		}
+
+		tokens.eat();
+
+		p.pushLoopState(true);
+		shared_ptr<ASTNode> loop_block = parseBlockOrStatement(p, tokens);
+		p.popLoopState();
+
+		if (!loop_block) {
+			p.error(tokens.meta(), errors::expected_statement);
+			return nullptr;
+		}
+
+		return make_shared<ForStatementNode>(for_meta, p.scope(), iter_is_const, move(identifier), move(array_expr), move(loop_block));
+	}
+
 	// <loop-control> ::= "break" | "continue"
 	static shared_ptr<ASTNode> parseLoopControlStatement(Parser& p, TokenStream& tokens) {
 		auto token = tokens.get();
@@ -235,6 +319,9 @@ struct ParserHelper {
 		} else if (isBuiltin(token_text, Builtin::WhileStatement)) {
 			require_semicolon = false;
 			statement = parseWhileStatement(p, tokens);
+		} else if (isBuiltin(token_text, Builtin::ForStatement)) {
+			require_semicolon = false;
+			statement = parseForStatement(p, tokens);
 		} else if (isBuiltin(token_text, Builtin::VariableDeclarator) || isBuiltin(token_text, Builtin::ConstantDeclarator)) {
 			statement = parseDeclaration(p, tokens);
 		} else if (isBuiltin(token_text, Builtin::BreakStatement) || isBuiltin(token_text, Builtin::ContinueStatement)) {

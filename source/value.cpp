@@ -207,6 +207,10 @@ shared_ptr<Value> ArrayValue::get(const shared_ptr<Value>& index) const {
 	}
 }
 
+shared_ptr<Value> ArrayValue::get(unsigned int index) const {
+	return _elements[index];
+}
+
 void ArrayValue::set(const shared_ptr<Value>& index, shared_ptr<Value> new_value) {
 	if (index->type() != ValueType::Number) {
 		throw TypeError("Expression is not of type Number");

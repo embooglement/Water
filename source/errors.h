@@ -16,6 +16,7 @@ namespace errors {
 	static const std::string expected_close_control_flow_condition = "expected closing parenthesis";
 	static const std::string expected_expression = "expected expression";
 	static const std::string expected_statement = "expected statement";
+	static const std::string expected_declaration = "expected declaration";
 	static const std::string expected_identifier = "expected identifier";
 	static const std::string expected_argument_list = "expected argument list";
 	static const std::string expected_function_declaration = "expected function declaration";
@@ -42,6 +43,8 @@ namespace errors {
 	static const std::string undeclared_identifier = "undeclared identifier: ";
 	static const std::string expected_declaration_expression = "constants must be assigned to when declared";
 	static const std::string assigning_constant = "left hand side is immutable, and cannot be assigned to";
+	static const std::string expected_for_statement = "expected for statement";
+	static const std::string expected_for_seperator = "expected in";
 }
 
 void printError(const TokenMetaData& meta, std::string error);
