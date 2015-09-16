@@ -9,6 +9,7 @@ syn keyword keywords var let
 syn keyword keywords if else true false 
 syn keyword keywords null func return 
 syn keyword keywords while break continue
+syn keyword keywords for in
 
 syn match operators '\v[-+*%^><=]'
 syn match operators '\v[-+*%^><=]='
