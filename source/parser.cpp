@@ -96,7 +96,7 @@ struct ParserHelper {
 			tokens.eat();
 		}
 
-		return make_shared<BlockNode>(block_meta, scope, has_open_brace, statements);
+		return make_shared<BlockNode>(block_meta, scope, has_open_brace, move(statements));
 	}
 
 	// <if-statement> ::= "if" "(" <expr> ")" <block-or-statement> ["else" <block-or-statement>]
