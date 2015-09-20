@@ -92,6 +92,12 @@ bool Scope::contains(const string& identifier) const {
 	return false;
 }
 
+void Scope::clearValues() {
+	for (auto&& var : _vars) {
+		std::get<1>(var.second) = nullptr;
+	}
+}
+
 shared_ptr<Scope>& Scope::getGlobalScope() {
 	return global_scope;
 }

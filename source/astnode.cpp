@@ -440,15 +440,20 @@ void BlockNode::output(ostream& out, int indent) const {
 }
 
 shared_ptr<Value> BlockNode::evaluate() const {
+	shared_ptr<Value> return_value = nullptr;
+
 	for (auto&& statement : _statements) {
 		auto val = statement->evaluate();
 
 		if (val && val->type() == ValueType::Sentinel) {
-			return val;
+			return_value = val;
+			break;
 		}
 	}
 
-	return nullptr;
+	scope()->clearValues();
+
+	return return_value;
 }
 
 /* ===== IfStatementNode ===== */

@@ -23,6 +23,7 @@ public:
 	bool add(std::string identifier, IdentifierInfo info);
 	std::shared_ptr<Scope> parent();
 	bool isFunctionScope() const;
+	void clearValues();
 
 	static std::shared_ptr<Scope>& getGlobalScope();
 	static void addToGlobalScope(std::string identifier, IdentifierInfo info, std::shared_ptr<Value> val);

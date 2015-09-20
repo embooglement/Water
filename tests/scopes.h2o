@@ -1,0 +1,17 @@
+{
+	let x = 1;
+
+	if (true) {
+		var y = "hello world";
+		let z = y;		
+
+		if (true) {
+			let w = z;
+			println(w);
+		}
+	}
+
+	println(x);
+}
+
+let g = func() {};
