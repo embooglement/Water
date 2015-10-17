@@ -61,7 +61,7 @@ void addBinaryMathFunctionToGlobalScope(const string& identifier, Func&& func) {
 void setupMetaModule() {
 	addFunctionToGlobalScope("reference_equals", [](const Arguments& arguments) -> ValuePtr {
 		if (arguments.size() != 2) {
-			throw InvalidArgumentsCountError("is_defined", 2, arguments.size());
+			throw InvalidArgumentsCountError("reference_equals", 2, arguments.size());
 		}
 
 		return BooleanValue::create(arguments[0] == arguments[1]);
