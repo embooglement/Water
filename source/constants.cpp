@@ -264,4 +264,3 @@ const auto keywords = ([]() -> set<string> {
 bool isKeyword(const string& text) {
 	return keywords.count(text) > 0;
 }
-

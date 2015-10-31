@@ -127,7 +127,6 @@ int main(int argc, const char** argv) {
 			cout << "\nOutput: " << endl;
 			tree->output(cout, 0);
 			cout << endl;
-
 		}
 
 		if (print_ast || ignore_errors) {
